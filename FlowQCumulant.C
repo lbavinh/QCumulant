@@ -124,45 +124,6 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
     pCov2Red4Red[i] = new TProfile2D(Form("pCov2Red4Red_pid%i", i), Form("Covariance(<4'>,<2'>) of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
   }
 
-  TProfile *hv22[ncent];  // profile <<2>> from 2nd Q-Cumulants
-  TProfile *hv24[ncent];  // profile <<4>> from 4th Q-Cumulants
-  TProfile *hPT[ncent][npt][npid];     // profile pt
-  TProfile *hv22pt[ncent][npt][npid];  // profile <<2'>> from 2nd Q-Cumulants
-  TProfile *hv24pt[ncent][npt][npid];  // profile <<4'>> from 4th Q-Cumulants
-  TProfile *hcov24[ncent];                // <2>*<4>
-  TProfile *hcov22prime[ncent][npt][npid];      // <2>*<2'>
-  TProfile *hcov24prime[ncent][npt][npid];      // <2>*<4'>
-  TProfile *hcov42prime[ncent][npt][npid];      // <2>*<4'>
-  TProfile *hcov44prime[ncent][npt][npid];      // <4>*<4'>
-  TProfile *hcov2prime4prime[ncent][npt][npid]; // <2'>*<4'>
-  TProfile *hv2EP[ncent][npt][npid];	// elliptic flow from EP method
-  TProfile *hv22EP[ncent][npid];      // integrated flow from EP method
-
-  TProfile *hv22Gap[ncent];
-  TProfile *hv22ptGap[ncent][npt][npid];
-  TProfile *hcov22primeGap[ncent][npt][npid];
-
-  for (int icent=0;icent<ncent;icent++){ // loop over centrality classes
-    hv22[icent] = new TProfile(Form("hv22_%i",icent),Form("hv22_%i",icent),1,0.,1.);
-    hv24[icent] = new TProfile(Form("hv24_%i",icent),Form("hv24_%i",icent),1,0.,1.);
-    hcov24[icent] = new TProfile(Form("hcov24_%i",icent),Form("hcov24_%i",icent),1,0.,1.);
-    hv22Gap[icent] = new TProfile(Form("hv22Gap_%i",icent),Form("hv22Gap_%i",icent),1,0.,1.);
-    for (int id=0;id<npid;id++){
-      hv22EP[icent][id] = new TProfile(Form("hv22EP_%i_%i",icent,id),Form("hv22EP_%i_%i",icent,id),1,0.,1.);
-      for (int ipt = 0; ipt < npt; ipt++){ // loop over pt bin
-        hv22pt[icent][ipt][id] = new TProfile(Form("hv22pt_%i_%i_%i",icent,ipt,id),Form("hv22pt_%i_%i_%i",icent,ipt,id),1,0.,1.);
-        hv24pt[icent][ipt][id] = new TProfile(Form("hv24pt_%i_%i_%i",icent,ipt,id),Form("hv24pt_%i_%i_%i",icent,ipt,id),1,0.,1.);
-        hcov22prime[icent][ipt][id] = new TProfile(Form("hcov22prime_%i_%i_%i",icent,ipt,id),Form("hcov22prime_%i_%i_%i",icent,ipt,id),1,0.,1.);
-        hcov24prime[icent][ipt][id] = new TProfile(Form("hcov24prime_%i_%i_%i",icent,ipt,id),Form("hcov24prime_%i_%i_%i",icent,ipt,id),1,0.,1.);
-        hcov42prime[icent][ipt][id] = new TProfile(Form("hcov42prime_%i_%i_%i",icent,ipt,id),Form("hcov42prime_%i_%i_%i",icent,ipt,id),1,0.,1.);
-        hcov44prime[icent][ipt][id] = new TProfile(Form("hcov44prime_%i_%i_%i",icent,ipt,id),Form("hcov44prime_%i_%i_%i",icent,ipt,id),1,0.,1.);
-        hcov2prime4prime[icent][ipt][id] = new TProfile(Form("hcov2prime4prime_%i_%i_%i",icent,ipt,id),Form("hcov2prime4prime_%i_%i_%i",icent,ipt,id),1,0.,1.);
-        hv22ptGap[icent][ipt][id] = new TProfile(Form("hv22ptGap_%i_%i_%i",icent,ipt,id),Form("hv22ptGap_%i_%i_%i",icent,ipt,id),1,0.,1.);
-        hcov22primeGap[icent][ipt][id] = new TProfile(Form("hcov22primeGap_%i_%i_%i",icent,ipt,id),Form("hcov22primeGap_%i_%i_%i",icent,ipt,id),1,0.,1.);      
-      } // end of loop over pt bin
-    }
-  } // end of loop over centrality classes
-
   // Start event loop
   int n_entries = chain->GetEntries();
   for (int iEv=0; iEv<n_entries; iEv++)
@@ -336,7 +297,6 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
       }
       w2Gap = MGap[0]*MGap[1];
       cor22Gap = CalRedCor22(Q2Gap[0],Q2Gap[1],MGap[0],MGap[1], 0.,w2Gap);       // <2>
-      hv22Gap[fCentBin]->Fill(0.5, cor22Gap, w2Gap);
       pCorrelator2EtaGap -> Fill(0.5+fCentBin, cor22Gap, w2Gap);
       for (int ieta=0;ieta<neta;ieta++){
         for (int ipt = 0; ipt < npt; ipt++){ // <2'>
@@ -345,10 +305,8 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
             p2Gap[ieta][ipt][id] = TComplex(px2Gap[ieta][ipt][id], py2Gap[ieta][ipt][id]);
             wred2Gap[ieta][ipt][id] = mpGap[ieta][ipt][id]*MGap[ieta];
             redCor22Gap[ieta][ipt][id] = CalRedCor22(Q2Gap[ieta], p2Gap[ieta][ipt][id], MGap[ieta], mpGap[ieta][ipt][id], 0., wred2Gap[ieta][ipt][id]);   // <2'>
-            hv22ptGap[fCentBin][ipt][id]->Fill(0.5, redCor22Gap[ieta][ipt][id], wred2Gap[ieta][ipt][id]);                                                                      // <<2'>>
             pReducedCorrelator2EtaGap[id] -> Fill(0.5+ipt, 0.5+fCentBin, redCor22Gap[ieta][ipt][id], wred2Gap[ieta][ipt][id]);
             // TProfile for covariance calculation in statistic error
-            hcov22primeGap[fCentBin][ipt][id]->Fill(0.5, cor22Gap*redCor22Gap[ieta][ipt][id], w2Gap*wred2Gap[ieta][ipt][id]); // <2>*<2'>
             pCov22RedEtaGap[id] -> Fill(0.5+ipt, 0.5+fCentBin, cor22Gap*redCor22Gap[ieta][ipt][id], w2Gap*wred2Gap[ieta][ipt][id]);
           
           }
@@ -364,12 +322,9 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
     if (w2 != 0 && w4 != 0){
       cor22 = CalCor22(Q2, M, w2);        // <2>
       cor24 = CalCor24(Q2, Q4, M, w4);    // <4>
-      hv22[fCentBin]->Fill(0.5, cor22, w2);  // <<2>>
-      hv24[fCentBin]->Fill(0.5, cor24, w4);  // <<4>>
       pCorrelator2->Fill(0.5+fCentBin, cor22, w2);  // <<2>>
       pCorrelator4->Fill(0.5+fCentBin, cor24, w4);  // <<4>>
       // TProfile for covariance calculation in statistic error
-      hcov24[fCentBin]->Fill(0.5, cor22 * cor24, w2 * w4); // <2>*<4>
       pCov24->Fill(0.5+fCentBin, cor22 * cor24, w2 * w4); // <2>*<4>
       for (int ipt = 0; ipt < npt; ipt++){
         for (int id=0;id<npid;id++){
@@ -380,25 +335,16 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
           q2[ipt][id] = TComplex(qx2[ipt][id], qy2[ipt][id]);
           q4[ipt][id] = TComplex(qx4[ipt][id], qy4[ipt][id]);
           redCor22[ipt][id] = CalRedCor22(Q2, p2[ipt][id], M, mp[ipt][id], mq[ipt][id], wred2[ipt][id]);                                // <2'>
-          hv22pt[fCentBin][ipt][id]->Fill(0.5, redCor22[ipt][id], wred2[ipt][id]);                                                      // <<2'>>
           pReducedCorrelator2[id]->Fill(0.5+ipt, 0.5+fCentBin, redCor22[ipt][id], wred2[ipt][id]);
-
           redCor24[ipt][id] = CalRedCor24(Q2, Q4, p2[ipt][id], q2[ipt][id], q4[ipt][id], M, mp[ipt][id], mq[ipt][id], wred4[ipt][id]);  // <4'>
-          hv24pt[fCentBin][ipt][id]->Fill(0.5, redCor24[ipt][id], wred4[ipt][id]);                                                         // <<4'>>
           pReducedCorrelator4[id]->Fill(0.5+ipt, 0.5+fCentBin, redCor24[ipt][id], wred4[ipt][id]);                                                      // <<4'>>
 
           // TProfile for covariance calculation in statistic error
-          hcov22prime[fCentBin][ipt][id]->Fill(0.5, cor22 * redCor22[ipt][id], w2 * wred2[ipt][id]);     // <2>*<2'>
-          hcov24prime[fCentBin][ipt][id]->Fill(0.5, cor22 * redCor24[ipt][id], w2 * wred4[ipt][id]);
-          hcov42prime[fCentBin][ipt][id]->Fill(0.5, cor24 * redCor22[ipt][id], w4 * wred2[ipt][id]);
-          hcov44prime[fCentBin][ipt][id]->Fill(0.5, cor24 * redCor24[ipt][id], w4 * wred4[ipt][id]);
-          hcov2prime4prime[fCentBin][ipt][id]->Fill(0.5, redCor22[ipt][id] * redCor24[ipt][id], wred2[ipt][id] * wred4[ipt][id]);
           pCov22Red[id]->Fill(0.5+ipt, 0.5+fCentBin, cor22 * redCor22[ipt][id], w2 * wred2[ipt][id]);     // <2>*<2'>
           pCov24Red[id]->Fill(0.5+ipt, 0.5+fCentBin, cor22 * redCor24[ipt][id], w2 * wred4[ipt][id]);
           pCov42Red[id]->Fill(0.5+ipt, 0.5+fCentBin, cor24 * redCor22[ipt][id], w4 * wred2[ipt][id]);
           pCov44Red[id]->Fill(0.5+ipt, 0.5+fCentBin, cor24 * redCor24[ipt][id], w4 * wred4[ipt][id]);
           pCov2Red4Red[id]->Fill(0.5+ipt, 0.5+fCentBin, redCor22[ipt][id] * redCor24[ipt][id], wred2[ipt][id] * wred4[ipt][id]);
-
         }
       }
     }
