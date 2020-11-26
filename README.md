@@ -5,6 +5,7 @@ Implemeted for PicoDst format: https://dev.ut.mephi.ru/PEParfenov/PicoDst
 1. Clone repository
 ```bash
 git clone https://github.com/lbavinh/QCumulant.git
+cd QCumulant
 ```
 2. Set environment variables for ROOT and PicoDst libraries
 ```bash
