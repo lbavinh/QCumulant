@@ -55,22 +55,22 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
 
   // Configure input information
 
-  // TChain *chain = new TChain("picodst");
-  // std::ifstream file(inputFileName.Data());
-  // std::string line;
-  // while(std::getline(file, line))
-  // {
-  //   chain->Add(line.c_str());
-  // }
-
-  TFile *treefile = TFile::Open(inputFileName.Data());
-  TTree *chain = (TTree *)treefile->Get("picodst");
-  if (!chain)
+  TChain *chain = new TChain("picodst");
+  std::ifstream file(inputFileName.Data());
+  std::string line;
+  while(std::getline(file, line))
   {
-    cout << "picodst is not found in " << inputFileName.Data() << endl;
-    treefile->Close();
-    return;
+    chain->Add(line.c_str());
   }
+
+  // TFile *treefile = TFile::Open(inputFileName.Data());
+  // TTree *chain = (TTree *)treefile->Get("picodst");
+  // if (!chain)
+  // {
+  //   cout << "picodst is not found in " << inputFileName.Data() << endl;
+  //   treefile->Close();
+  //   return;
+  // }
 
   PicoDstMCEvent *mcEvent = nullptr;
   PicoDstRecoEvent *recoEvent = nullptr;

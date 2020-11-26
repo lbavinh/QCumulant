@@ -33,7 +33,7 @@ struct term{ // structure for "Mean squared error of MEAN" calculation, using un
 
 };
 
-void v2plot(TString inFileName = "UrQMD_7.7GeV_Reco.root", TString outFileName = "graphs_v2.root"){
+void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.root"){
   TFile *inFile = new TFile(inFileName.Data(),"read");
   TFile *outFile = new TFile(outFileName.Data(),"recreate"); // Save TGraphErrors
   TString outDirName = "pics";
