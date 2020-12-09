@@ -530,10 +530,10 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
       }
 
       // Differential Flow of 2,4-QC
-      qc24.setQxQy(phiAngles, ipt, charge, fId);
+      qc24.setQP(phiAngles, ipt, charge, fId);
       
       // Differential Flow of 2-QC, eta-gapped
-      qc2eg.setPxPy(phiAngles, ipt, eta, charge,fId);
+      qc2eg.setPxPy(phiAngles, ipt, eta, charge, fId);
       
     } // end of track loop
 
