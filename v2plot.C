@@ -39,7 +39,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
   TString outDirName = "pics";
   
   // Flags
-  bool saveAsPNG = true;
+  bool saveAsPNG = false;
   int excludeMethod = -1; // not including i-th method in v2 plotting, where i=0,1,2,3 correspond v22,v24,v2eta-sub,v22eta-gap, respectively
   int drawDifferentialFlowTill = 3; // Draw v2 vs pT (10% centrality cut) till: 0: no drawing; 1: till 10%; 2: till 20%; etc.
   // Constants
@@ -188,6 +188,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
         // v22
         term cor2red = term(pReducedCorrelator2_cent[id][icent],ipt);
         double v22Dif = cor2red.mVal/v22;
+        // if (id==8 && icent==3) cout << v22Dif <<" ";
         double cov22prime = Covariance(pCov22Red_cent[id][icent],pCorrelator2,pReducedCorrelator2_cent[id][icent],ipt,icent,ipt);
         double ev22Dif = sqrt(0.25*pow(cor2.mVal,-3)*(pow(cor2red.mVal,2)*cor2.mMSE
                             + 4*pow(cor2.mVal,2)*cor2red.mMSE - 4*cor2.mVal*cor2red.mVal*cov22prime));
@@ -243,7 +244,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
       }
     } // end of loop over PID
   } // end of loop over centrality classes
-
+  cout << endl;
   const char *grTitleDF[nmethod]={"v_{2}{2};p_{T} [GeV/c];v_{2}",
                                   "v_{2}{4};p_{T} [GeV/c];v_{2}",
                                   "v_{2}{2,#eta-gap};p_{T} [GeV/c];v_{2}"};
@@ -334,6 +335,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
     double ev22 = sqrt(1./(4.*cor2.mVal)*cor2.mMSE);
     v2_RF[0][icent] = v22;
     v2e_RF[0][icent] = ev22;
+    // cout << v22 << ", ";
     // 4QC
     term cor4 = term(pCorrelator4,icent);
     double cov24 = Covariance(pCov24,pCorrelator2,pCorrelator4,icent,icent,icent);
@@ -348,7 +350,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
     double ev22Gap = sqrt(1./(4.*cor2Gap.mVal)*cor2Gap.mMSE);
     v2_RF[2][icent] = v22Gap;
     v2e_RF[2][icent] = ev22Gap;
-    
+    cout << v22Gap << ", ";
     for (int id=0;id<npid;id++){
       // v22
       term cor2red = term(pReducedCorrelator2_PID[id],icent);
@@ -398,6 +400,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
       v2e[2][id][icent] = ev22DifGap;
     } // end of loop over PID
   } // end of loop over centrality classes
+  cout << endl;
   for (int imeth=0; imeth<nmethod; imeth++){
     grRefFl[imeth] = new TGraphErrors(ncent,bin_cent,v2_RF[imeth],bin_centE,v2e_RF[imeth]);
     grRefFl[imeth] -> SetMarkerStyle(marker[imeth]);
