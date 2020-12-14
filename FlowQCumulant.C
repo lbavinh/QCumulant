@@ -427,7 +427,7 @@ int findId(PicoDstRecoTrack *recoTrack)
 {
     int fId = -1;
 
-    charge = recoTrack->GetCharge();
+    float charge = recoTrack->GetCharge();
     if (recoTrack->GetTofFlag() != 0 && recoTrack->GetTofFlag() != 4)
     {
         if (recoTrack->GetPidProbPion() > 0.9 && charge > 0)
@@ -507,7 +507,7 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
     for (int iTrk = 0; iTrk < reco_mult; iTrk++)
     { // Track loop
       auto recoTrack = (PicoDstRecoTrack *)recoTracks->UncheckedAt(iTrk);
-      if !trackCut(recoTrack)
+      if (!trackCut(recoTrack))
       {
         continue;
       }
