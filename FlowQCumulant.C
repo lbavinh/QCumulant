@@ -125,7 +125,7 @@ struct CPhiAngles
 {
       Double_t cos4phi, sin4phi, cos2phi, sin2phi;
 
-      void recalc();
+      void recalc(float phi);
 };
 
 void CPhiAngles::recalc(float phi)
@@ -148,7 +148,7 @@ struct CQC24
     Double_t mq[npt][npid], mp[npt][npid];
     Double_t redCor22[npt][npid], redCor24[npt][npid];
     Double_t w2, w4;
-    Double_t wred2[npt][npid], wred4[npt][npid;
+    Double_t wred2[npt][npid], wred4[npt][npid];
     Double_t cor22, cor24;
 
     int fCentBin;
