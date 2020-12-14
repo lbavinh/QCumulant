@@ -156,11 +156,11 @@ struct CQC24
     CQC24() { zero(); }
     void zero();
     void setQxQy(const CPhiAngles& phiAngles);
-    void CQC24::setQP(const CPhiAngles& phiAngles, const int ipt, const float charge, const int fId);
+    void setQP(const CPhiAngles& phiAngles, const int ipt, const float charge, const int fId);
     void calcMPCorr(CCorrelator *pCorr, CCovCorrelator *pCovCorr);
 
   private:        
-    void CQC24::setQP(const CPhiAngles& phiAngles, const int ipt, const int idx1);
+    void setQP(const CPhiAngles& phiAngles, const int ipt, const int idx1);
 };
 
 void CQC24::zero()
