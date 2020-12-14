@@ -43,8 +43,8 @@ const double maxpt = 3.6;   // max pt for differential flow
 const double minpt = 0.;    // min pt for differential flow
 const double maxptRF = 3.;  // max pt for reference flow
 const double minptRF = 0.2; // min pt for reference flow
-const float eta_cut = 1.5;
-const float eta_gap = 0.05; // +-0.05
+const float eta_cut = 1.5;  // pseudorapidity acceptance window for flow measurements 
+const float eta_gap = 0.05; // +-0.05, eta-gap between 2 eta sub-event of two-particle cumulants method with eta-gap
 const int Nhits_cut = 16;   // minimum nhits of reconstructed tracks
 const float DCAcut = 0.5;
 const int neta = 2; // [eta-,eta+]
@@ -166,16 +166,34 @@ struct CQC24
 void CQC24::zero()
 {
     Qx2 = 0.; Qy2 = 0.; Qx4 = 0.; Qy4 = 0.;
-    Q2 = 0.; Q4 = 0.;
-    px2[npt][npid] = {{0.}}; py2[npt][npid] = {{0.}};
-    p2[npt][npid] = {{0.}}; p4[npt][npid] = {{0.}}; q2[npt][npid] = {{0.}}; q4[npt][npid] = {{0.}};
-    qx2[npt][npid] = {{0.}}; qy2[npt][npid] = {{0.}}; qx4[npt][npid] = {{0.}}; qy4[npt][npid] = {{0.}};
+    Q2 = TComplex(0.,0.); Q4 = TComplex(0.,0.);
+    // px2[npt][npid] = {{0.}}; py2[npt][npid] = {{0.}};
+    // p2[npt][npid] = {{0.}}; p4[npt][npid] = {{0.}}; q2[npt][npid] = {{0.}}; q4[npt][npid] = {{0.}};
+    // qx2[npt][npid] = {{0.}}; qy2[npt][npid] = {{0.}}; qx4[npt][npid] = {{0.}}; qy4[npt][npid] = {{0.}};
     M = 0.;
-    mq[npt][npid] = {{0.}}; mp[npt][npid] = {{0.}};
-    redCor22[npt][npid] = {{0.}}; redCor24[npt][npid] = {{0.}};
+    // mq[npt][npid] = {{0.}}; mp[npt][npid] = {{0.}};
+    // redCor22[npt][npid] = {{0.}}; redCor24[npt][npid] = {{0.}};
     w2 = 0.; w4 = 0.;
-    wred2[npt][npid] = {{0.}}; wred4[npt][npid] = {{0.}};
-    cor22 = 0.; cor24 = 0.;  
+    // wred2[npt][npid] = {{0.}}; wred4[npt][npid] = {{0.}};
+    cor22 = 0.; cor24 = 0.;
+    for (int ipt = 0; ipt < npt; ipt++)
+    {
+        for (int ipid = 0; ipid < npid; ipid++)
+        {
+            px2[ipt][ipid] = 0.;
+            py2[ipt][ipid] = 0.;
+            mq[ipt][ipid] = 0.;
+            mp[ipt][ipid] = 0.;
+            redCor22[ipt][ipid] = 0.;
+            redCor24[ipt][ipid] = 0.;
+            wred2[ipt][ipid] = 0.;
+            wred4[ipt][ipid] = 0.;
+            p2[ipt][ipid] = TComplex(0., 0.);
+            p4[ipt][ipid] = TComplex(0., 0.);
+            q2[ipt][ipid] = TComplex(0., 0.);
+            q4[ipt][ipid] = TComplex(0., 0.);
+        }
+    }
 }
 
 void CQC24::setQxQy(const CPhiAngles& phiAngles)
@@ -229,7 +247,7 @@ void CQC24::calcMPCorr(CCorrelator *pCorr, CCovCorrelator *pCovCorr)
       pCorr->pCorrelator2->Fill(0.5 + fCentBin, cor22, w2); // <<2>>
       pCorr->pCorrelator4->Fill(0.5 + fCentBin, cor24, w4); // <<4>>
       // TProfile for covariance calculation in statistic error
-      pCov24->Fill(0.5 + fCentBin, cor22 * cor24, w2 * w4); // <2>*<4>
+      pCovCorr->pCov24->Fill(0.5 + fCentBin, cor22 * cor24, w2 * w4); // <2>*<4>
       for (int ipt = 0; ipt < npt; ipt++)
       {
         for (int id = 0; id < npid; id++)
@@ -287,15 +305,34 @@ private:
 
 void CQC2eg::zero()
 {
-    Qx2Gap[neta] = {0.}; Qy2Gap[neta] = {0.};
-    px2Gap[neta][npt][npid] = {{{0.}}}; py2Gap[neta][npt][npid] = {{{0.}}};
-    Q2Gap[neta] = {0.}; p2Gap[neta][npt][npid] = {{{0.}}};
-    MGap[neta] = {0};
-    mpGap[neta][npt][npid] = {{{0.}}};
+    // Qx2Gap[neta] = {0.}; Qy2Gap[neta] = {0.};
+    // px2Gap[neta][npt][npid] = {{{0.}}}; py2Gap[neta][npt][npid] = {{{0.}}};
+    // Q2Gap[neta] = {0.}; p2Gap[neta][npt][npid] = {{{0.}}};
+    // MGap[neta] = {0};
+    // mpGap[neta][npt][npid] = {{{0.}}};
     w2Gap = 0.;
-    wred2Gap[neta][npt][npid] = {{{0.}}};
+    // wred2Gap[neta][npt][npid] = {{{0.}}};
     cor22Gap = 0.;
-    redCor22Gap[neta][npt][npid] = {{{0.}}};
+    // redCor22Gap[neta][npt][npid] = {{{0.}}};
+    for (int ieta = 0; ieta < neta; ieta++)
+    {
+        Qx2Gap[ieta] = 0.;
+        Qy2Gap[ieta] = 0.;
+        MGap[ieta] = 0.;
+        Q2Gap[ieta] = TComplex(0., 0.);
+        for (int ipt = 0; ipt < npt; ipt++)
+        {
+            for (int ipid = 0; ipid < npid; ipid++)
+            {
+                px2Gap[ieta][ipt][ipid] = 0;
+                py2Gap[ieta][ipt][ipid] = 0;
+                mpGap[ieta][ipt][ipid] = 0;
+                wred2Gap[ieta][ipt][ipid] = 0;
+                redCor22Gap[ieta][ipt][ipid] = 0;
+                p2Gap[ieta][ipt][ipid] = TComplex(0., 0.);
+            }
+        }
+    }
 }
 
 void CQC2eg::setQxQy(const CPhiAngles& phiAngles, const int idx)
