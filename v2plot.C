@@ -224,7 +224,8 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
             - 4*cor2.mVal*pow(v24,8)*cov2prime4prime));
         v2Dif[1][icent][id][ipt] = v24Dif;
         v2eDif[1][icent][id][ipt] = ev24Dif;
-
+        // if (id==8 && icent==3) cout << v24Dif <<" ";
+        // if (id==8 && icent==3) cout << ev24Dif <<" ";
         // v22 Gapped
         term cor2redGap = term(pReducedCorrelator2EtaGap_cent[id][icent],ipt);
         double v22DifGap = cor2redGap.mVal/v22Gap;
@@ -233,7 +234,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
                             + 4*pow(cor2Gap.mVal,2)*cor2redGap.mMSE - 4*cor2Gap.mVal*cor2redGap.mVal*cov22primeGap));
         v2Dif[2][icent][id][ipt] = v22DifGap;
         v2eDif[2][icent][id][ipt] = ev22DifGap;
-
+        // if (id==8 && icent==3) cout << v22DifGap <<" ";
 
       } // end of loop for all pT bin
       for (int i=0; i<nmethod; i++){
@@ -336,6 +337,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
     v2_RF[0][icent] = v22;
     v2e_RF[0][icent] = ev22;
     // cout << v22 << ", ";
+    // cout << ev22 << ", ";
     // 4QC
     term cor4 = term(pCorrelator4,icent);
     double cov24 = Covariance(pCov24,pCorrelator2,pCorrelator4,icent,icent,icent);
@@ -343,14 +345,15 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
     double ev24 = sqrt( 1./pow(v24,6)*(cor2.mVal*cor2.mVal*cor2.mMSE+1./16*cor4.mMSE-0.5*cor2.mVal*cov24) );
     v2_RF[1][icent] = v24;
     v2e_RF[1][icent] = ev24;
-
+    // cout << v24 << ", ";
+    // cout << ev24 << ", ";
     // 2QC Gapped
     term cor2Gap = term(pCorrelator2EtaGap,icent);
     double v22Gap = sqrt(cor2Gap.mVal);
     double ev22Gap = sqrt(1./(4.*cor2Gap.mVal)*cor2Gap.mMSE);
     v2_RF[2][icent] = v22Gap;
     v2e_RF[2][icent] = ev22Gap;
-    cout << v22Gap << ", ";
+    // cout << v22Gap << ", ";
     for (int id=0;id<npid;id++){
       // v22
       term cor2red = term(pReducedCorrelator2_PID[id],icent);
@@ -360,7 +363,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
                           + 4*pow(cor2.mVal,2)*cor2red.mMSE - 4*cor2.mVal*cor2red.mVal*cov22prime));
       v2[0][id][icent] = v22Dif;
       v2e[0][id][icent] = ev22Dif;
-      
+      // if (id==9) cout << v22Dif <<" ";
       // v24
       term cor4red = term(pReducedCorrelator4_PID[id],icent);
       double cov24prime = Covariance(pCov24Red_PID[id],pCorrelator2,pReducedCorrelator4_PID[id],icent,icent,icent);
@@ -398,6 +401,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
                           + 4*pow(cor2Gap.mVal,2)*cor2redGap.mMSE - 4*cor2Gap.mVal*cor2redGap.mVal*cov22primeGap));
       v2[2][id][icent] = v22DifGap;
       v2e[2][id][icent] = ev22DifGap;
+      // if (id==9) cout << v22DifGap <<" ";
     } // end of loop over PID
   } // end of loop over centrality classes
   cout << endl;

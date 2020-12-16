@@ -182,6 +182,11 @@ void CQC24::zero()
         {
             px2[ipt][ipid] = 0.;
             py2[ipt][ipid] = 0.;
+            qx2[ipt][ipid] = 0.;
+            qy2[ipt][ipid] = 0.;
+            qx4[ipt][ipid] = 0.;
+            qy4[ipt][ipid] = 0.;
+
             mq[ipt][ipid] = 0.;
             mp[ipt][ipid] = 0.;
             redCor22[ipt][ipid] = 0.;
