@@ -235,7 +235,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
         v2Dif[2][icent][id][ipt] = v22DifGap;
         v2eDif[2][icent][id][ipt] = ev22DifGap;
         // if (id==8 && icent==3) cout << v22DifGap <<" ";
-
+        // if (id==8 && icent==3) cout << ev22DifGap <<" ";
       } // end of loop for all pT bin
       for (int i=0; i<nmethod; i++){
         grDifFl[i][icent][id] = new TGraphErrors(npt,pt,v2Dif[i][icent][id],ept,v2eDif[i][icent][id]);

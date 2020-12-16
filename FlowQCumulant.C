@@ -384,13 +384,17 @@ void CQC2eg::setQxQy(const CPhiAngles& phiAngles, const float eta)
 
 void CQC2eg::setPxPy(const CPhiAngles& phiAngles, const int ipt, const float eta, const float charge, const int fId)
 {
+    // Here, we reverse eta index (left TPC: 1, right TPC: 0)
+    // in order to correlate p-vector with Q-vector from the oposite TPC sub-event
     if (eta < -eta_gap)
-    {
-        setPxPy(phiAngles, ipt, 0, charge, fId);
+    {   // Left TPC sub-event
+        setPxPy(phiAngles, ipt, 1, charge, fId);
+        // Here, we reverse eta index in order to correlate p-vector with 
     }
     else if (eta > eta_gap)
-    {
-        setPxPy(phiAngles, ipt, 1, charge, fId);
+    {   // Right TPC sub-event
+        setPxPy(phiAngles, ipt, 0, charge, fId);
+
     }
 }
 
