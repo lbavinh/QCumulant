@@ -79,14 +79,20 @@ struct CCorrelator
 CCorrelator::CCorrelator()
 {
     pCorrelator2EtaGap = new TProfile("pCorrelator2EtaGap", "2nd order correlator with eta-gap, TPC", ncent, 0, ncent); // <<2>> (with eta-gap)
+    pCorrelator2EtaGap -> Sumw2();
     pCorrelator2 = new TProfile("pCorrelator2", "2nd order correlator", ncent, 0, ncent);                               // <<2>>
+    pCorrelator2 -> Sumw2();
     pCorrelator4 = new TProfile("pCorrelator4", "4th order correlator", ncent, 0, ncent);                               // <<4>>
+    pCorrelator4 -> Sumw2();
 
     for (int i = 0; i < npid; i++)
     {
         pReducedCorrelator2EtaGap[i] = new TProfile2D(Form("pReducedCorrelator2EtaGap_pid%i", i), Form("Reduced 2nd order correlator with eta-gap of %s (TPC", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
+        pReducedCorrelator2EtaGap[i] -> Sumw2();
         pReducedCorrelator2[i] = new TProfile2D(Form("pReducedCorrelator2_pid%i", i), Form("Reduced 2nd order correlator of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
+        pReducedCorrelator2[i] -> Sumw2();
         pReducedCorrelator4[i] = new TProfile2D(Form("pReducedCorrelator4_pid%i", i), Form("Reduced 4th order correlator of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
+        pReducedCorrelator4[i] -> Sumw2();
     }  
 }
 
@@ -108,15 +114,22 @@ struct CCovCorrelator
 CCovCorrelator::CCovCorrelator()
 {
     pCov24 = new TProfile("pCov24", "Covariance(<2>,<4>)", ncent, 0, ncent); // <2>*<4>
+    pCov24 -> Sumw2();
 
     for (int i = 0; i < npid; i++)
     {
       pCov22RedEtaGap[i] = new TProfile2D(Form("pCov22RedEtaGap_pid%i", i), Form("Covariance(<2>,<2'>) with eta-gap of %s (TPC)", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
+      pCov22RedEtaGap[i] -> Sumw2();
       pCov22Red[i] = new TProfile2D(Form("pCov22Red_pid%i", i), Form("Covariance(<2>,<2'>) of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
+      pCov22Red[i] -> Sumw2();
       pCov24Red[i] = new TProfile2D(Form("pCov24Red_pid%i", i), Form("Covariance(<2>,<4'>) of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
+      pCov24Red[i] -> Sumw2();
       pCov42Red[i] = new TProfile2D(Form("pCov42Red_pid%i", i), Form("Covariance(<4>,<2'>) of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
+      pCov42Red[i] -> Sumw2();
       pCov44Red[i] = new TProfile2D(Form("pCov44Red_pid%i", i), Form("Covariance(<4>,<4'>) of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
+      pCov44Red[i] -> Sumw2();
       pCov2Red4Red[i] = new TProfile2D(Form("pCov2Red4Red_pid%i", i), Form("Covariance(<4'>,<2'>) of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
+      pCov2Red4Red[i] -> Sumw2();
     }    
 
 }
@@ -547,7 +560,7 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
 
 
     float pt, eta, phi, charge;
-    Double_t cos4phi, sin4phi, cos2phi, sin2phi;
+    // Double_t cos4phi, sin4phi, cos2phi, sin2phi;
     CPhiAngles phiAngles;
 
     for (int iTrk = 0; iTrk < reco_mult; iTrk++)
