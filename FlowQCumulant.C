@@ -442,13 +442,13 @@ bool trackCut(PicoDstRecoTrack *recoTrack)
     float pt = recoTrack->GetPt();
     float eta = recoTrack->GetEta();
 
-    if (pt < minpt || pt > maxpt || abs(eta) > eta_cut)
+    if (pt < minpt || pt > maxpt || fabs(eta) > eta_cut)
         return false;
-    if (abs(recoTrack->GetDCAx()) > DCAcut)
+    if (fabs(recoTrack->GetDCAx()) > DCAcut)
         return false; // DCAx cut
-    if (abs(recoTrack->GetDCAy()) > DCAcut)
+    if (fabs(recoTrack->GetDCAy()) > DCAcut)
         return false; // DCAy cut
-    if (abs(recoTrack->GetDCAz()) > DCAcut)
+    if (fabs(recoTrack->GetDCAz()) > DCAcut)
         return false; // DCAz cut
     if (recoTrack->GetNhits() < Nhits_cut)
         return false; // TPC hits cut    
