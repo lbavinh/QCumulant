@@ -21,6 +21,7 @@
 #include <TDatabasePDG.h>
 #include <TComplex.h>
 #include <TString.h>
+#include <TEnv.h>
 
 // PicoDst headers
 #include <PicoDstMCEvent.h>
@@ -29,25 +30,43 @@
 #include <PicoDstRecoTrack.h>
 #include <PicoDstFHCal.h>
 
+#include "constants.C"
 #include "utilities.C"
 
-// Constant declaration
-const int npid = 8; // h+, pions+, kaons+, protons+, h-, pions-, kaons-, protons-
-const std::vector<TString> pidNames = {"hadron_pos", "pion_pos", "kaon_pos", "proton", "hadron_neg", "pion_neg", "kaon_neg", "antiproton"};
-const int ncent = 9; //
+Double_t maxpt = 3.6;   // max pt for differential flow
+Double_t minpt = 0.;    // min pt for differential flow
+Double_t maxptRF = 3.;  // max pt for reference flow
+Double_t minptRF = 0.2; // min pt for reference flow
+Double_t eta_cut = 1.5;  // pseudorapidity acceptance window for flow measurements 
+Double_t eta_gap = 0.05; // +-0.05, eta-gap between 2 eta sub-event of two-particle cumulants method with eta-gap
+Int_t Nhits_cut = 16;   // minimum nhits of reconstructed tracks
+Double_t DCAcut = 0.5;
+Double_t pid_probability = 0.9;
 
-// const double bin_cent[ncent] = {2.5,7.5,15.,25.,35.,45.,55.,65.,75.};
-const int npt = 16; // 0-3.6 GeV/c - number of pT bins
-const double pTBin[npt + 1] = {0., 0.2, 0.4, 0.6, 0.8, 1., 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.2, 3.6};
-const double maxpt = 3.6;   // max pt for differential flow
-const double minpt = 0.;    // min pt for differential flow
-const double maxptRF = 3.;  // max pt for reference flow
-const double minptRF = 0.2; // min pt for reference flow
-const float eta_cut = 1.5;  // pseudorapidity acceptance window for flow measurements 
-const float eta_gap = 0.05; // +-0.05, eta-gap between 2 eta sub-event of two-particle cumulants method with eta-gap
-const int Nhits_cut = 16;   // minimum nhits of reconstructed tracks
-const float DCAcut = 0.5;
-const int neta = 2; // [eta-,eta+]
+Int_t debug = 0;
+
+void readConfig(const TString& _strFileName)
+{
+        if (_strFileName.Length() == 0)
+        {
+                return;
+        }
+
+        TEnv env(_strFileName);
+
+        Nhits_cut = env.GetValue("Nhits_cut", 0);
+
+        maxpt = env.GetValue("maxpt", 0.);
+        minpt = env.GetValue("minpt", 0.);
+        maxptRF = env.GetValue("maxptRF", 0.);
+        minptRF = env.GetValue("minptRF", 0.);
+        eta_cut = env.GetValue("eta_cut", 0.);
+        eta_gap = env.GetValue("eta_gap", 0.);
+        DCAcut = env.GetValue("DCAcut", 0.);
+        pid_probability = env.GetValue("pid_probability", 0.);
+
+        debug = env.GetValue("debug", 0);
+}
 
 TChain* initChain(const TString &inputFileName, const char* chainName)
 {
@@ -82,7 +101,7 @@ CCorrelator::CCorrelator()
     pCorrelator2 = new TProfile("pCorrelator2", "2nd order correlator", ncent, 0, ncent);                               // <<2>>
     pCorrelator4 = new TProfile("pCorrelator4", "4th order correlator", ncent, 0, ncent);                               // <<4>>
 
-    for (int i = 0; i < npid; i++)
+    for (Int_t i = 0; i < npid; i++)
     {
         pReducedCorrelator2EtaGap[i] = new TProfile2D(Form("pReducedCorrelator2EtaGap_pid%i", i), Form("Reduced 2nd order correlator with eta-gap of %s (TPC", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
         pReducedCorrelator2[i] = new TProfile2D(Form("pReducedCorrelator2_pid%i", i), Form("Reduced 2nd order correlator of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
@@ -109,7 +128,7 @@ CCovCorrelator::CCovCorrelator()
 {
     pCov24 = new TProfile("pCov24", "Covariance(<2>,<4>)", ncent, 0, ncent); // <2>*<4>
 
-    for (int i = 0; i < npid; i++)
+    for (Int_t i = 0; i < npid; i++)
     {
       pCov22RedEtaGap[i] = new TProfile2D(Form("pCov22RedEtaGap_pid%i", i), Form("Covariance(<2>,<2'>) with eta-gap of %s (TPC)", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
       pCov22Red[i] = new TProfile2D(Form("pCov22Red_pid%i", i), Form("Covariance(<2>,<2'>) of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
@@ -125,10 +144,10 @@ struct CPhiAngles
 {
       Double_t cos4phi, sin4phi, cos2phi, sin2phi;
 
-      void recalc(float phi);
+      void recalc(Double_t phi);
 };
 
-void CPhiAngles::recalc(float phi)
+void CPhiAngles::recalc(Double_t phi)
 {
       cos4phi = TMath::Cos(4. * phi);
       sin4phi = TMath::Sin(4. * phi);
@@ -151,16 +170,16 @@ struct CQC24
     Double_t wred2[npt][npid], wred4[npt][npid];
     Double_t cor22, cor24;
 
-    int fCentBin;
+    Int_t fCentBin;
 
     CQC24() { zero(); }
     void zero();
     void setQxQy(const CPhiAngles& phiAngles);
-    void setQP(const CPhiAngles& phiAngles, const int ipt, const float charge, const int fId);
+    void setQP(const CPhiAngles& phiAngles, const Int_t ipt, const Double_t charge, const Int_t fId);
     void calcMPCorr(CCorrelator *pCorr, CCovCorrelator *pCovCorr);
 
   private:        
-    void setQP(const CPhiAngles& phiAngles, const int ipt, const int idx1);
+    void setQP(const CPhiAngles& phiAngles, const Int_t ipt, const Int_t idx1);
 };
 
 void CQC24::zero()
@@ -176,9 +195,9 @@ void CQC24::zero()
     w2 = 0.; w4 = 0.;
     // wred2[npt][npid] = {{0.}}; wred4[npt][npid] = {{0.}};
     cor22 = 0.; cor24 = 0.;
-    for (int ipt = 0; ipt < npt; ipt++)
+    for (Int_t ipt = 0; ipt < npt; ipt++)
     {
-        for (int ipid = 0; ipid < npid; ipid++)
+        for (Int_t ipid = 0; ipid < npid; ipid++)
         {
             px2[ipt][ipid] = 0.;
             py2[ipt][ipid] = 0.;
@@ -210,7 +229,7 @@ void CQC24::setQxQy(const CPhiAngles& phiAngles)
         M++;
 }
 
-void CQC24::setQP(const CPhiAngles& phiAngles, const int ipt, const int idx1)
+void CQC24::setQP(const CPhiAngles& phiAngles, const Int_t ipt, const Int_t idx1)
 {
         px2[ipt][idx1] += phiAngles.cos2phi;
         py2[ipt][idx1] += phiAngles.sin2phi;
@@ -223,7 +242,7 @@ void CQC24::setQP(const CPhiAngles& phiAngles, const int ipt, const int idx1)
         mq[ipt][idx1]++;
 }
 
-void CQC24::setQP(const CPhiAngles& phiAngles, const int ipt, const float charge, const int fId)
+void CQC24::setQP(const CPhiAngles& phiAngles, const Int_t ipt, const Double_t charge, const Int_t fId)
 {
       if (charge > 0)
       {
@@ -253,9 +272,9 @@ void CQC24::calcMPCorr(CCorrelator *pCorr, CCovCorrelator *pCovCorr)
       pCorr->pCorrelator4->Fill(0.5 + fCentBin, cor24, w4); // <<4>>
       // TProfile for covariance calculation in statistic error
       pCovCorr->pCov24->Fill(0.5 + fCentBin, cor22 * cor24, w2 * w4); // <2>*<4>
-      for (int ipt = 0; ipt < npt; ipt++)
+      for (Int_t ipt = 0; ipt < npt; ipt++)
       {
-        for (int id = 0; id < npid; id++)
+        for (Int_t id = 0; id < npid; id++)
         {
           wred2[ipt][id] = mp[ipt][id] * M - mq[ipt][id];                           // w(<2'>)
           wred4[ipt][id] = (mp[ipt][id] * M - 3 * mq[ipt][id]) * (M - 1) * (M - 2); // w(<4'>)
@@ -293,18 +312,18 @@ struct CQC2eg
     Double_t cor22Gap;
     Double_t redCor22Gap[neta][npt][npid];
 
-    int fCentBin;
+    Int_t fCentBin;
 
     CQC2eg() { zero(); }
     void zero();
-    void setQxQy(const CPhiAngles& phiAngles, const float eta);
-    void setPxPy(const CPhiAngles& phiAngles, const int ipt, const float eta, const float charge, const int fId);
+    void setQxQy(const CPhiAngles& phiAngles, const Double_t eta);
+    void setPxPy(const CPhiAngles& phiAngles, const Int_t ipt, const Double_t eta, const Double_t charge, const Int_t fId);
     void calcMPCorr(CCorrelator *pCorr, CCovCorrelator *pCovCorr);
 
 private:
-    void setQxQy(const CPhiAngles& phiAngles, const int idx);
-    void setPxPy(const CPhiAngles& phiAngles, const int ipt, const int idx, const int idx1);
-    void setPxPy(const CPhiAngles& phiAngles, const int ipt, const int idx, const float charge, const int fId);
+    void setQxQy(const CPhiAngles& phiAngles, const Int_t idx);
+    void setPxPy(const CPhiAngles& phiAngles, const Int_t ipt, const Int_t idx, const Int_t idx1);
+    void setPxPy(const CPhiAngles& phiAngles, const Int_t ipt, const Int_t idx, const Double_t charge, const Int_t fId);
 
 };
 
@@ -319,15 +338,15 @@ void CQC2eg::zero()
     // wred2Gap[neta][npt][npid] = {{{0.}}};
     cor22Gap = 0.;
     // redCor22Gap[neta][npt][npid] = {{{0.}}};
-    for (int ieta = 0; ieta < neta; ieta++)
+    for (Int_t ieta = 0; ieta < neta; ieta++)
     {
         Qx2Gap[ieta] = 0.;
         Qy2Gap[ieta] = 0.;
         MGap[ieta] = 0.;
         Q2Gap[ieta] = TComplex(0., 0.);
-        for (int ipt = 0; ipt < npt; ipt++)
+        for (Int_t ipt = 0; ipt < npt; ipt++)
         {
-            for (int ipid = 0; ipid < npid; ipid++)
+            for (Int_t ipid = 0; ipid < npid; ipid++)
             {
                 px2Gap[ieta][ipt][ipid] = 0;
                 py2Gap[ieta][ipt][ipid] = 0;
@@ -340,21 +359,21 @@ void CQC2eg::zero()
     }
 }
 
-void CQC2eg::setQxQy(const CPhiAngles& phiAngles, const int idx)
+void CQC2eg::setQxQy(const CPhiAngles& phiAngles, const Int_t idx)
 {
     Qx2Gap[idx] += phiAngles.cos2phi;
     Qy2Gap[idx] += phiAngles.sin2phi;
     MGap[idx]++;
 }
 
-void CQC2eg::setPxPy(const CPhiAngles& phiAngles, const int ipt, const int idx, const int idx1)
+void CQC2eg::setPxPy(const CPhiAngles& phiAngles, const Int_t ipt, const Int_t idx, const Int_t idx1)
 {
     px2Gap[idx][ipt][idx1] += phiAngles.cos2phi;
     py2Gap[idx][ipt][idx1] += phiAngles.sin2phi;
     mpGap[idx][ipt][idx1]++;  
 }
 
-void CQC2eg::setPxPy(const CPhiAngles& phiAngles, const int ipt, const int idx, const float charge, const int fId)
+void CQC2eg::setPxPy(const CPhiAngles& phiAngles, const Int_t ipt, const Int_t idx, const Double_t charge, const Int_t fId)
 {
       if (charge > 0)
       {
@@ -370,7 +389,7 @@ void CQC2eg::setPxPy(const CPhiAngles& phiAngles, const int ipt, const int idx, 
       }
 }
 
-void CQC2eg::setQxQy(const CPhiAngles& phiAngles, const float eta)
+void CQC2eg::setQxQy(const CPhiAngles& phiAngles, const Double_t eta)
 {
     if (eta < -eta_gap)
     {
@@ -382,7 +401,7 @@ void CQC2eg::setQxQy(const CPhiAngles& phiAngles, const float eta)
     }
 }
 
-void CQC2eg::setPxPy(const CPhiAngles& phiAngles, const int ipt, const float eta, const float charge, const int fId)
+void CQC2eg::setPxPy(const CPhiAngles& phiAngles, const Int_t ipt, const Double_t eta, const Double_t charge, const Int_t fId)
 {
     // Here, we reverse eta index (left TPC: 1, right TPC: 0)
     // in order to correlate p-vector with Q-vector from the oposite TPC sub-event
@@ -403,7 +422,7 @@ void CQC2eg::calcMPCorr(CCorrelator *pCorr, CCovCorrelator *pCovCorr)
      // 2-QC, eta-gapped: multi-particle correlation calculation
     if (MGap[0] != 0 && MGap[1] != 0)
     {
-        for (int ieta = 0; ieta < neta; ieta++)
+        for (Int_t ieta = 0; ieta < neta; ieta++)
         {
             Q2Gap[ieta] = TComplex(Qx2Gap[ieta], Qy2Gap[ieta]);
         }
@@ -412,11 +431,11 @@ void CQC2eg::calcMPCorr(CCorrelator *pCorr, CCovCorrelator *pCovCorr)
         cor22Gap = CalRedCor22(Q2Gap[0], Q2Gap[1], MGap[0], MGap[1], 0., w2Gap); // <2>
         pCorr->pCorrelator2EtaGap->Fill(0.5 + fCentBin, cor22Gap, w2Gap);
       
-        for (int ieta = 0; ieta < neta; ieta++)
+        for (Int_t ieta = 0; ieta < neta; ieta++)
         {
-            for (int ipt = 0; ipt < npt; ipt++)
+            for (Int_t ipt = 0; ipt < npt; ipt++)
             { // <2'>
-                for (int id = 0; id < npid; id++)
+                for (Int_t id = 0; id < npid; id++)
                 {
                     if (mpGap[ieta][ipt][id] == 0)
                         continue;
@@ -439,8 +458,8 @@ bool trackCut(PicoDstRecoTrack *recoTrack)
         return false;
     }
 
-    float pt = recoTrack->GetPt();
-    float eta = recoTrack->GetEta();
+    Double_t pt = recoTrack->GetPt();
+    Double_t eta = recoTrack->GetEta();
 
     if (pt < minpt || pt > maxpt || fabs(eta) > eta_cut)
         return false;
@@ -456,11 +475,11 @@ bool trackCut(PicoDstRecoTrack *recoTrack)
     return true;                                   
 }
 
-int findBin(float pt)
+Int_t findBin(Double_t pt)
 {
-    int ipt = -1;
+    Int_t ipt = -1;
     
-    for (int j = 0; j < npt; j++)
+    for (Int_t j = 0; j < npt; j++)
     {
         if (pt >= pTBin[j] && pt < pTBin[j + 1])
         ipt = j;
@@ -469,34 +488,53 @@ int findBin(float pt)
     return ipt;
 }
 
-int findId(PicoDstRecoTrack *recoTrack)
+Int_t findId(PicoDstRecoTrack *recoTrack)
 {
-    int fId = -1;
+    Int_t fId = -1;
 
-    float charge = recoTrack->GetCharge();
+    Double_t charge = recoTrack->GetCharge();
     if (recoTrack->GetTofFlag() != 0 && recoTrack->GetTofFlag() != 4)
     {
-        if (recoTrack->GetPidProbPion() > 0.9 && charge > 0)
+        if (recoTrack->GetPidProbPion() > pid_probability && charge > 0)
             fId = 1; // pion+
-        if (recoTrack->GetPidProbKaon() > 0.9 && charge > 0)
+        if (recoTrack->GetPidProbKaon() > pid_probability && charge > 0)
             fId = 2; // kaon+
-        if (recoTrack->GetPidProbProton() > 0.9 && charge > 0)
+        if (recoTrack->GetPidProbProton() > pid_probability && charge > 0)
             fId = 3; // proton
-        if (recoTrack->GetPidProbPion() > 0.9 && charge < 0)
+        if (recoTrack->GetPidProbPion() > pid_probability && charge < 0)
             fId = 5; // pion-
-        if (recoTrack->GetPidProbKaon() > 0.9 && charge < 0)
+        if (recoTrack->GetPidProbKaon() > pid_probability && charge < 0)
             fId = 6; // kaon-
-        if (recoTrack->GetPidProbProton() > 0.9 && charge < 0)
+        if (recoTrack->GetPidProbProton() > pid_probability && charge < 0)
             fId = 7; // antiproton
     }
 
     return fId;
 }
 
-void FlowQCumulant(TString inputFileName, TString outputFileName)
+void FlowQCumulant(TString inputFileName, TString outputFileName, TString configFileName = "")
 {
   TStopwatch timer;
   timer.Start();
+
+  if (configFileName.Length() > 0)
+  {
+    readConfig(configFileName);
+  }
+
+  if (debug)
+  {
+        cout << "Nhits_cut = " << Nhits_cut << endl;
+
+        cout << "maxpt = " << maxpt << endl;
+        cout << "minpt = " << minpt << endl;
+        cout << "maxptRF = " << maxptRF << endl;
+        cout << "minptRF = " << minptRF << endl;
+        cout << "eta_cut = " << eta_cut << endl;
+        cout << "eta_gap = " << eta_gap << endl;
+        cout << "DCAcut = " << DCAcut << endl;
+        cout << "pid_probability = " << pid_probability << endl;
+  }
 
   // Configure input information
   TChain *chain = initChain(inputFileName, "picodst");
@@ -524,20 +562,20 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
   CQC24   qc24;
   CQC2eg  qc2eg;
 
-  int n_entries = chain->GetEntries();
-  for (int iEv = 0; iEv < n_entries; iEv++)
+  Int_t n_entries = chain->GetEntries();
+  for (Int_t iEv = 0; iEv < n_entries; iEv++)
   {
     if (iEv % 10000 == 0)
       std::cout << "Event [" << iEv << "/" << n_entries << "]" << std::endl;
     chain->GetEntry(iEv);
 
     // Read MC event
-    float bimp = mcEvent->GetB();
-    float cent = CentB(bimp);
+    Double_t bimp = mcEvent->GetB();
+    Double_t cent = CentB(bimp);
     if (cent == -1)
       continue;
 
-    int reco_mult = recoTracks->GetEntriesFast();
+    Int_t reco_mult = recoTracks->GetEntriesFast();
 
     qc24.zero();
     qc2eg.zero();
@@ -546,11 +584,11 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
     qc2eg.fCentBin = GetCentBin(cent);
 
 
-    float pt, eta, phi, charge;
+    Double_t pt, eta, phi, charge;
     Double_t cos4phi, sin4phi, cos2phi, sin2phi;
     CPhiAngles phiAngles;
 
-    for (int iTrk = 0; iTrk < reco_mult; iTrk++)
+    for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
     { // Track loop
       auto recoTrack = (PicoDstRecoTrack *)recoTracks->UncheckedAt(iTrk);
       if (!trackCut(recoTrack))
@@ -563,8 +601,8 @@ void FlowQCumulant(TString inputFileName, TString outputFileName)
       phi = recoTrack->GetPhi();
       charge = recoTrack->GetCharge();
 
-      int ipt = findBin(pt);
-      int fId = findId(recoTrack);
+      Int_t ipt = findBin(pt);
+      Int_t fId = findId(recoTrack);
 
       phiAngles.recalc(phi);
 
@@ -608,7 +646,7 @@ int main(int argc, char **argv)
     std::cerr << "./FlowQCumulant -i INPUT -o OUTPUT" << std::endl;
     return 1;
   }
-  for (int i = 1; i < argc; i++)
+  for (Int_t i = 1; i < argc; i++)
   {
     if (std::string(argv[i]) != "-i" &&
         std::string(argv[i]) != "-o" &&
