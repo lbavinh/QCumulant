@@ -24,6 +24,7 @@ mkdir -p ${TMP_DIR}
 
 cp ${MAIN_DIR}/FlowQCumulant.C ${TMP_DIR}
 cp ${MAIN_DIR}/utilities.C ${TMP_DIR}
+cp ${MAIN_DIR}/constants.C ${TMP_DIR}
 
 cd
 
