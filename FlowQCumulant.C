@@ -33,6 +33,9 @@
 #include "constants.C"
 #include "utilities.C"
 
+using std::cout;
+using std::endl;
+
 Double_t maxpt = 3.6;   // max pt for differential flow
 Double_t minpt = 0.;    // min pt for differential flow
 Double_t maxptRF = 3.;  // max pt for reference flow
@@ -635,52 +638,4 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
 
   timer.Stop();
   timer.Print();
-}
-
-int main(int argc, char **argv)
-{
-  TString iFileName, oFileName;
-
-  if (argc < 5)
-  {
-    std::cerr << "./FlowQCumulant -i INPUT -o OUTPUT" << std::endl;
-    return 1;
-  }
-  for (Int_t i = 1; i < argc; i++)
-  {
-    if (std::string(argv[i]) != "-i" &&
-        std::string(argv[i]) != "-o" &&
-        std::string(argv[i]) != "--bad-acceptance")
-    {
-      std::cerr << "\n[ERROR]: Unknown parameter " << i << ": " << argv[i] << std::endl;
-      return 2;
-    }
-    else
-    {
-      if (std::string(argv[i]) == "-i" && i != argc - 1)
-      {
-        iFileName = argv[++i];
-        continue;
-      }
-      if (std::string(argv[i]) == "-i" && i == argc - 1)
-      {
-        std::cerr << "\n[ERROR]: Input file name was not specified " << std::endl;
-        return 3;
-      }
-      if (std::string(argv[i]) == "-o" && i != argc - 1)
-      {
-        oFileName = argv[++i];
-        continue;
-      }
-      if (std::string(argv[i]) == "-o" && i == argc - 1)
-      {
-        std::cerr << "\n[ERROR]: Output file name was not specified " << std::endl;
-        return 4;
-      }
-    }
-  }
-
-  FlowQCumulant(iFileName, oFileName);
-
-  return 0;
 }

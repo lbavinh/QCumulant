@@ -40,7 +40,7 @@ set(QCUMULANT_INCLUDE_LIBRARIES
   ${ROOT_LIBRARIES}
 )
 
-set_source_files_properties(FlowQCumulant.C PROPERTIES LANGUAGE CXX)
+# set_source_files_properties(FlowQCumulant.C PROPERTIES LANGUAGE CXX)
 
-add_executable(FlowQCumulant FlowQCumulant.C)
+add_executable(FlowQCumulant main.cpp)
 target_link_libraries(FlowQCumulant ${QCUMULANT_INCLUDE_LIBRARIES})
