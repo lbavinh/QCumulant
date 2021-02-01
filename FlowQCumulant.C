@@ -30,10 +30,14 @@
 #include <PicoDstRecoTrack.h>
 #include <PicoDstFHCal.h>
 
+#include <IReader.h>
+#include <PicoDstReader.h>
+
 #include "constants.C"
 #include "utilities.C"
 
 using std::cout;
+using std::cerr;
 using std::endl;
 
 Double_t maxpt = 3.6;   // max pt for differential flow
@@ -47,6 +51,8 @@ Double_t DCAcut = 0.5;
 Double_t pid_probability = 0.9;
 
 Int_t debug = 0;
+
+std::string format = "picodst";
 
 void readConfig(const TString& _strFileName)
 {
@@ -69,6 +75,8 @@ void readConfig(const TString& _strFileName)
         pid_probability = env.GetValue("pid_probability", 0.);
 
         debug = env.GetValue("debug", 0);
+
+        format = env.GetValue("format", "");
 }
 
 TChain* initChain(const TString &inputFileName, const char* chainName)
@@ -537,22 +545,26 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
         cout << "eta_gap = " << eta_gap << endl;
         cout << "DCAcut = " << DCAcut << endl;
         cout << "pid_probability = " << pid_probability << endl;
+        cout << "format = " << format << endl;
   }
 
   // Configure input information
-  TChain *chain = initChain(inputFileName, "picodst");
+  TChain *chain = initChain(inputFileName, format.c_str());
 
   PicoDstMCEvent *mcEvent = nullptr;
-  PicoDstRecoEvent *recoEvent = nullptr;
-  TClonesArray *recoTracks = nullptr;
-  // TClonesArray *mcTracks = nullptr;
-  // TClonesArray *fhcalmodules = nullptr;
 
-  chain->SetBranchAddress("mcevent.", &mcEvent);
-  chain->SetBranchAddress("recoevent.", &recoEvent);
-  chain->SetBranchAddress("recotracks", &recoTracks);
-  // chain->SetBranchAddress("mctracks",&mcTracks);
-  // chain->SetBranchAddress("FHCalModules",&fhcalmodules);
+  IReader* reader = nullptr;
+  if (format == "picodst")
+  {
+    reader = new PicoDstReader();
+  }
+  if (!reader)
+  {
+    cerr << "No valid format is set!" << endl;
+    return;
+  }
+
+  reader->Init(chain);
 
   // Configure output information
   TFile *fo = new TFile(outputFileName.Data(), "recreate");
@@ -570,7 +582,8 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
   {
     if (iEv % 10000 == 0)
       std::cout << "Event [" << iEv << "/" << n_entries << "]" << std::endl;
-    chain->GetEntry(iEv);
+    // chain->GetEntry(iEv);
+    mcEvent = reader->ReadMcEvent(iEv);
 
     // Read MC event
     Double_t bimp = mcEvent->GetB();
@@ -578,7 +591,8 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
     if (cent == -1)
       continue;
 
-    Int_t reco_mult = recoTracks->GetEntriesFast();
+    // Int_t reco_mult = recoTracks->GetEntriesFast();
+    Int_t reco_mult = reader->GetRecoTrackSize();
 
     qc24.zero();
     qc2eg.zero();
@@ -593,7 +607,7 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
 
     for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
     { // Track loop
-      auto recoTrack = (PicoDstRecoTrack *)recoTracks->UncheckedAt(iTrk);
+      auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
       if (!trackCut(recoTrack))
       {
         continue;
