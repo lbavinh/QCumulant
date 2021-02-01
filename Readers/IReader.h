@@ -21,6 +21,8 @@ public:
     virtual PicoDstMCTrack* ReadMcTrack(Int_t tr_num) = 0;
     virtual PicoDstRecoTrack* ReadRecoTrack(Int_t tr_num) = 0;
     virtual ~IReader();
+
+    ClassDef(IReader,0);
 };
 
 #endif

@@ -49,6 +49,7 @@ Double_t eta_gap = 0.05; // +-0.05, eta-gap between 2 eta sub-event of two-parti
 Int_t Nhits_cut = 16;   // minimum nhits of reconstructed tracks
 Double_t DCAcut = 0.5;
 Double_t pid_probability = 0.9;
+Long64_t Nevents = -1;
 
 Int_t debug = 0;
 
@@ -75,6 +76,7 @@ void readConfig(const TString& _strFileName)
         pid_probability = env.GetValue("pid_probability", 0.);
 
         debug = env.GetValue("debug", 0);
+        Nevents = env.GetValue("Nevents", 0);
 
         format = env.GetValue("format", "");
 }
@@ -535,6 +537,7 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
 
   if (debug)
   {
+        cout << "Nevents = " << Nevents << endl;
         cout << "Nhits_cut = " << Nhits_cut << endl;
 
         cout << "maxpt = " << maxpt << endl;
@@ -577,7 +580,8 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
   CQC24   qc24;
   CQC2eg  qc2eg;
 
-  Int_t n_entries = chain->GetEntries();
+  Long64_t chain_size = chain->GetEntries();
+  Long64_t n_entries = (Nevents < chain_size && Nevents > 0) ? Nevents : chain_size;
   for (Int_t iEv = 0; iEv < n_entries; iEv++)
   {
     if (iEv % 10000 == 0)
