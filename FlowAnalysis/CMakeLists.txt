@@ -12,11 +12,13 @@ set(FLOWANALYSIS_INCLUDE_LIBRARIES
 set(FlowAnalysis_h_files
   "${CMAKE_CURRENT_SOURCE_DIR}/QVector.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithEtaSubEventPlane.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithLeeYangZeros.h"
 )
 
 set(FlowAnalysis_cxx_files
   "${CMAKE_CURRENT_SOURCE_DIR}/QVector.cxx"
   "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithEtaSubEventPlane.cxx"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithLeeYangZeros.cxx"
 )
 
 set(FlowAnalysis_LinkDef

@@ -12,7 +12,7 @@
 #include <TString.h>
 
 #include "QVector.h"
-#include "../constants.C"
+
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -20,23 +20,28 @@ using std::endl;
 class FlowAnalysisWithEtaSubEventPlane
 {
 public:
-  FlowAnalysisWithEtaSubEventPlane(bool bFirstRun, TString inputFileFromFirstRun);
+  FlowAnalysisWithEtaSubEventPlane();
   virtual ~FlowAnalysisWithEtaSubEventPlane();
+  void Init();
   void Zero(); // Reset variables for new event loop
   void ProcessFirstTrackLoop(const double &eta, const double &phi, const double &pt);
   void ProcessEventAfterFirstTrackLoop(const double &dCent);
   void ProcessSecondTrackLoop(const double &eta, const double &phi, const double &pt, const double &dCent);
-  void GetRes(TString inputFileFromFirstRun);
+  void SetEtaGap(double d) { this->fEtaGap = d; }
+  void SetFirstRun(bool kt) { this->fFirstRun = kt; }
+  void SetInputFileFromFirstRun(TString str) { this->fstrInputFileFromFirstRun = str; }
+  void GetRes();
   void SaveHist();
 private:
   bool fFirstRun;
   bool fMultCut;
   double fPsi_L;
   double fPsi_R;
-  QVector Qvector_L;
-  QVector Qvector_R;
+  QVector *fQvector_L;
+  QVector *fQvector_R;
   double fRes2[ncent];
-
+  double fEtaGap;
+  TString fstrInputFileFromFirstRun;
   TProfile *fPrRes;
   TProfile3D *fPrV2EtaSubEventPlane;
   ClassDef(FlowAnalysisWithEtaSubEventPlane,0);

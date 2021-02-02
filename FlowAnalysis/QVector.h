@@ -1,6 +1,6 @@
 #ifndef QVECTOR_H
 #define QVECTOR_H
-
+#include "../constants.C"
 #include <TMath.h>
 class QVector
 {

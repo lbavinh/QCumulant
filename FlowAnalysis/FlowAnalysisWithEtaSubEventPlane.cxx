@@ -1,49 +1,66 @@
 #include <FlowAnalysisWithEtaSubEventPlane.h>
 ClassImp(FlowAnalysisWithEtaSubEventPlane);
 
-FlowAnalysisWithEtaSubEventPlane::FlowAnalysisWithEtaSubEventPlane(bool bFirstRun, TString inputFileFromFirstRun) :fFirstRun(bFirstRun)
+FlowAnalysisWithEtaSubEventPlane::FlowAnalysisWithEtaSubEventPlane() :
+  fFirstRun(true),
+  fMultCut(true),
+  fPsi_L(0.),
+  fPsi_R(0.),
+  fQvector_L(NULL),
+  fQvector_R(NULL),
+  // fRes2(NULL),
+  fEtaGap(0.),
+  fstrInputFileFromFirstRun(""),
+  fPrRes(NULL),
+  fPrV2EtaSubEventPlane(NULL)
 {
-  fPrRes = new TProfile("prRes", "EP resolution", ncent, &bin_cent[0]);
-  if (!fFirstRun) 
-  {
-    fPrV2EtaSubEventPlane = new TProfile3D("prV2EtaSubEventPlane", "", ncent, &bin_cent[0], npt, &pTBin[0], netaBin, &etaBin[0]);
-    GetRes(inputFileFromFirstRun);
-  }
 }
 
 FlowAnalysisWithEtaSubEventPlane::~FlowAnalysisWithEtaSubEventPlane()
 {
 }
 
+void FlowAnalysisWithEtaSubEventPlane::Init()
+{
+  fPrRes = new TProfile("prRes", "EP resolution", ncent, &bin_cent[0]);
+  fQvector_L = new QVector();
+  fQvector_R = new QVector();
+  if (!fFirstRun) 
+  {
+    fPrV2EtaSubEventPlane = new TProfile3D("prV2EtaSubEventPlane", "", ncent, &bin_cent[0], npt, &pTBin[0], netaBin, &etaBin[0]);
+    GetRes();
+  }  
+}
+
 void FlowAnalysisWithEtaSubEventPlane::Zero()
 {
   fPsi_L = 0.;
   fPsi_R = 0.;
-  Qvector_L.Zero();
-  Qvector_R.Zero();
+  fQvector_L->Zero();
+  fQvector_R->Zero();
 }
 
 void FlowAnalysisWithEtaSubEventPlane::ProcessFirstTrackLoop(const double &eta, const double &phi, const double &pt)
 {
-  if (eta < - eta_gapEP)
+  if (eta < - fEtaGap)
   {
-    Qvector_L.CalQVector(phi, pt);
+    fQvector_L->CalQVector(phi, pt);
   }
-  if (eta > eta_gapEP)
+  if (eta > fEtaGap)
   {
-    Qvector_R.CalQVector(phi, pt);
+    fQvector_R->CalQVector(phi, pt);
   }
 }
 
 void FlowAnalysisWithEtaSubEventPlane::ProcessEventAfterFirstTrackLoop(const double &dCent)
 {
-  if (Qvector_L.GetMult() > mult_EP_cut && Qvector_R.GetMult() > mult_EP_cut)
+  if (fQvector_L->GetMult() > mult_EP_cut && fQvector_R->GetMult() > mult_EP_cut)
   {
     fMultCut = false;
-    Qvector_L.WeightQVector();
-    Qvector_R.WeightQVector();
-    fPsi_L = 0.5 * TMath::ATan2(Qvector_L.Y(), Qvector_L.X());
-    fPsi_R = 0.5 * TMath::ATan2(Qvector_R.Y(), Qvector_R.X());
+    fQvector_L->WeightQVector();
+    fQvector_R->WeightQVector();
+    fPsi_L = 0.5 * TMath::ATan2(fQvector_L->Y(), fQvector_L->X());
+    fPsi_R = 0.5 * TMath::ATan2(fQvector_R->Y(), fQvector_R->X());
     fPrRes->Fill(dCent, TMath::Cos( 2.0 * (fPsi_L - fPsi_R) ));
   }
   else
@@ -53,12 +70,12 @@ void FlowAnalysisWithEtaSubEventPlane::ProcessEventAfterFirstTrackLoop(const dou
   
 }
 
-void FlowAnalysisWithEtaSubEventPlane::GetRes(TString inputFileFromFirstRun)
+void FlowAnalysisWithEtaSubEventPlane::GetRes()
 {
   if (!fFirstRun)
   {
-    if (!inputFileFromFirstRun) { cerr << "Warning: inputFileFromFirstRun=NULL" << endl;}
-    TFile *fi = new TFile(inputFileFromFirstRun.Data(), "read");
+    if (fstrInputFileFromFirstRun == "") { cerr << "Warning: fstrInputFileFromFirstRun="" " << endl;}
+    TFile *fi = new TFile(fstrInputFileFromFirstRun.Data(), "read");
     fPrRes = (TProfile*)fi->Get("prRes");
     for (int ic = 0; ic < ncent; ic++)
     {
@@ -72,11 +89,11 @@ void FlowAnalysisWithEtaSubEventPlane::ProcessSecondTrackLoop(const double &eta,
   if (!fMultCut && !fFirstRun)
   {
     double v2EtaSubEventPlane = -999.0;
-    if (eta < -eta_gapEP)
+    if (eta < -fEtaGap)
     {
       v2EtaSubEventPlane = TMath::Cos( 2.0 * (phi - fPsi_R) );
     }
-    else if (eta > eta_gapEP)
+    else if (eta > fEtaGap)
     {
       v2EtaSubEventPlane = TMath::Cos( 2.0 * (phi - fPsi_L) );
     }

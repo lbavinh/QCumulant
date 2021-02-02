@@ -16,7 +16,15 @@ const Double_t pTBin[npt + 1] = {0., 0.2, 0.4, 0.6, 0.8, 1., 1.2, 1.4, 1.6, 1.8,
 const Int_t neta = 2; // [eta-,eta+]
 
 const int netaBin = 10;
-const double etaBin[netaBin+1] = {-2.0, -1.5, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 1.5, 2.0};
+const double etaBin[netaBin+1] = {-1.5, -1.0, -0.5, -0.25, -0.05, 0.0, 0.05, 0.25, 0.5, 1.0, 1.5};
 const int mult_EP_cut = 4;
-const double eta_gapEP = 0.05;
+// const double eta_gapEP = 0.05;
 const double bin_cent[ncent + 1] = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80};
+
+// LYZ
+const int rbins = 2500;
+const double rMax = 0.5;
+const double rMin = 0.005;
+const double rMaxSum = 0.5;
+const double rMinSum = 0.005;
+const int thetabins = 5;
