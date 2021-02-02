@@ -33,10 +33,7 @@
 #include <IReader.h>
 #include <PicoDstReader.h>
 
-#include <QVector.h>
-#include <FlowAnalysisWithEtaSubEventPlane.h>
-
-// #include "constants.C"
+#include "constants.C"
 #include "utilities.C"
 
 using std::cout;
@@ -620,9 +617,6 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
   CCorrelator corr;
   CCovCorrelator cov_corr;
 
-  // Eta-sub Event Plane
-  Bool_t bFirstRun = kTRUE;
-  FlowAnalysisWithEtaSubEventPlane *flowEtaSub = new FlowAnalysisWithEtaSubEventPlane(bFirstRun, "");
   // Start event loop
 
   CQC24   qc24;
@@ -648,7 +642,7 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
 
     qc24.zero();
     qc2eg.zero();
-    flowEtaSub->Zero();
+
     qc24.fCentBin = GetCentBin(cent);
     qc2eg.fCentBin = GetCentBin(cent);
 
@@ -687,7 +681,7 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
       
       // Differential Flow of 2-QC, eta-gapped
       qc2eg.setPxPy(phiAngles, ipt, eta, charge, fId);
-      flowEtaSub->ProcessFirstTrackLoop(eta, phi, pt);
+      
     } // end of track loop
 
     // 2-QC, eta-gapped: multi-particle correlation calculation
@@ -695,27 +689,6 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
 
     // 2,4-QC: multi-particle correlation calculation
     qc24.calcMPCorr(&corr, &cov_corr);
-
-    flowEtaSub->ProcessEventAfterFirstTrackLoop(cent);
-    if (!bFirstRun)
-    {
-      for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
-      { // 2nd Track loop
-        auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
-        if (!trackCut(recoTrack))
-        {
-          continue;
-        }
-
-        pt = recoTrack->GetPt();
-        eta = recoTrack->GetEta();
-        phi = recoTrack->GetPhi();
-        charge = recoTrack->GetCharge();
-
-        flowEtaSub->ProcessSecondTrackLoop(eta, phi, pt, cent);
-      }
-    }
-
   } // end event loop
 
   // Writing output
@@ -723,7 +696,6 @@ void FlowQCumulant(TString inputFileName, TString outputFileName, TString config
   // fo->Write();
   corr.SaveHist();
   cov_corr.SaveHist();
-  flowEtaSub->SaveHist();
   fo->Close();
 
   timer.Stop();

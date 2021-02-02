@@ -24,6 +24,7 @@ add_definitions(${ROOT_CXX_FLAGS})
 
 add_subdirectory(PicoDst)
 add_subdirectory(Readers)
+add_subdirectory(FlowAnalysis)
 
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall")
@@ -32,6 +33,7 @@ set(QCUMULANT_INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/PicoDst/include
   ${CMAKE_CURRENT_SOURCE_DIR}/Readers
+  ${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysis
   ${ROOT_INLCUDE_DIRS}
 )
 
@@ -40,6 +42,7 @@ include_directories(${QCUMULANT_INCLUDE_DIRECTORIES})
 set(QCUMULANT_INCLUDE_LIBRARIES
   PicoDst
   Readers
+  FlowAnalysis
   ${ROOT_LIBRARIES}
 )
 
