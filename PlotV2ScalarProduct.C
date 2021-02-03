@@ -54,10 +54,10 @@ TProfile *PlotV2DifferentialVersusEta(TProfile3D*const &prV2,
   return prV2diffEta;
 }
 
-void PlotV2EtaSubEventPlane(TString inputFileName = "SecondRun.root")
+void PlotV2ScalarProduct(TString inputFileName = "SecondRun.root")
 {
   TFile *fi = TFile::Open(inputFileName.Data());
-  TProfile3D *pr = (TProfile3D *)fi->Get("prV2EtaSubEventPlane");
+  TProfile3D *pr = (TProfile3D *)fi->Get("prV2ScalarProduct");
   TProfile3D *prClone = (TProfile3D *)pr->Clone(Form("Clone_%s",pr->GetName()));
   TCanvas c;
   c.Divide(2,2);
@@ -71,7 +71,7 @@ void PlotV2EtaSubEventPlane(TString inputFileName = "SecondRun.root")
   prV2diffpt->SetMarkerStyle(27);
   prV2diffpt->SetMarkerColor(kBlue + 3);
   prV2diffpt->GetYaxis()->SetRangeUser(0., 0.2);
-  prV2diffpt->GetXaxis()->SetRangeUser(0., 3.0);
+  prV2diffpt->GetXaxis()->SetRangeUser(0., 3.5);
   prV2diffpt->Draw();
 
   c.cd(2);
@@ -80,7 +80,7 @@ void PlotV2EtaSubEventPlane(TString inputFileName = "SecondRun.root")
   prV2diffpt4080->SetMarkerStyle(27);
   prV2diffpt4080->SetMarkerColor(kBlue + 3);
   prV2diffpt4080->GetYaxis()->SetRangeUser(0., 0.2);
-  prV2diffpt4080->GetXaxis()->SetRangeUser(0., 3.0);
+  prV2diffpt4080->GetXaxis()->SetRangeUser(0., 3.5);
   prV2diffpt4080->Draw();
 
   c.cd(3);
@@ -93,12 +93,12 @@ void PlotV2EtaSubEventPlane(TString inputFileName = "SecondRun.root")
   
   c.cd(4);
   // v2 versus eta, 0.2<pt<3.5 GeV/c, 10-40%
-  TProfile *prV2diffEta = PlotV2DifferentialVersusEta(prClone, 0.2, 3.0, 10, 40);
+  TProfile *prV2diffEta = PlotV2DifferentialVersusEta(prClone, 0.2, 3.5, 10, 40);
   // TProfile *prV2diffEta = PlotV2DifferentialVersusEta(pr, 0.2, 3.5, 10, 40);
   prV2diffEta->SetMarkerStyle(27);
   prV2diffEta->SetMarkerColor(kBlue + 3);
   prV2diffEta->GetYaxis()->SetRangeUser(0., 0.1);
   prV2diffEta->Draw();
 
-  c.SaveAs("FlowEP.pdf");
+  c.SaveAs("FlowSP.pdf");
 }

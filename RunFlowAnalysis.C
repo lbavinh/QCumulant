@@ -36,6 +36,7 @@
 #include <QVector.h>
 #include <FlowAnalysisWithEtaSubEventPlane.h>
 #include <FlowAnalysisWithLeeYangZeros.h>
+#include <FlowAnalysisWithScalarProduct.h>
 // #include "constants.C"
 #include "utilities.C"
 
@@ -49,6 +50,8 @@ bool LYZ_SUM_1 = 0;
 bool LYZ_SUM_2 = 0;
 bool LYZ_SUM_PRODUCT_1 = 1;
 bool LYZ_SUM_PRODUCT_2 = 0;
+bool SCALARPRODUCT_1 = 1;
+bool SCALARPRODUCT_2 = 0;
 
 Double_t maxpt = 3.6;   // max pt for differential flow
 Double_t minpt = 0.;    // min pt for differential flow
@@ -228,12 +231,11 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   // TString inputFileNameFromFirstRun = "";
 
   FlowAnalysisWithEtaSubEventPlane  *flowEtaSub = NULL; // Eta-sub Event Plane
-  FlowAnalysisWithLeeYangZeros      *flowLYZ = NULL; // Lee Yang Zeros
-
+  FlowAnalysisWithLeeYangZeros      *flowLYZ    = NULL; // Lee Yang Zeros
+  FlowAnalysisWithScalarProduct     *flowSP     = NULL; // Scalar Product
   if (ETASUBEVENTPLANE_1) {
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
     flowEtaSub->SetFirstRun(true);
-    
     flowEtaSub->SetEtaGap(eta_gap);
     flowEtaSub->Init();
   }
@@ -273,7 +275,19 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   }
   QVector *Q2 = new QVector(); // for LYZ only, need to be improve to be also feasible to QC.
   // Start event loop
-
+  if (SCALARPRODUCT_1) {
+    flowSP = new FlowAnalysisWithScalarProduct();
+    flowSP->SetFirstRun(true);
+    flowSP->SetEtaGap(eta_gap);
+    flowSP->Init();
+  }
+  if (SCALARPRODUCT_2) {
+    flowSP = new FlowAnalysisWithScalarProduct();
+    flowSP->SetFirstRun(false);
+    flowSP->SetEtaGap(eta_gap);
+    flowSP->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
+    flowSP->Init();
+  }
   CQC24   qc24;
   CQC2eg  qc2eg;
 
@@ -300,6 +314,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     
     if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->Zero();
     if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->Zero();
+    if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->Zero();
     Q2->Zero();
     
     qc24.fCentBin = icent;
@@ -333,6 +348,8 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         // 2,4-QC
         qc24.setQxQy(phiAngles);
         qc2eg.setQxQy(phiAngles, eta);
+        if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessFirstTrackLoop(eta, phi, pt);
+        if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->ProcessFirstTrackLoop(eta, phi);
       }
 
       // Differential Flow of 2,4-QC
@@ -340,7 +357,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
       
       // Differential Flow of 2-QC, eta-gapped
       qc2eg.setPxPy(phiAngles, ipt, eta, charge, fId);
-      if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessFirstTrackLoop(eta, phi, pt);
+      
       if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->ProcessFirstTrackLoop(phi, pt, icent);
       Q2->CalQVector(phi, 1.);
     } // end of track loop
@@ -352,8 +369,9 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     qc24.calcMPCorr(&corr, &cov_corr);
 
     if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessEventAfterFirstTrackLoop(cent);
+    if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->ProcessEventAfterFirstTrackLoop(cent);
     if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->ProcessEventAfterFirstTrackLoop(Q2, icent);
-    if (ETASUBEVENTPLANE_2 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_2)
+    if (ETASUBEVENTPLANE_2 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_2 || SCALARPRODUCT_2)
     {
       for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
       { // 2nd Track loop
@@ -369,6 +387,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         charge = recoTrack->GetCharge();
 
         if (ETASUBEVENTPLANE_2) flowEtaSub->ProcessSecondTrackLoop(eta, phi, pt, cent);
+        if (SCALARPRODUCT_2) flowSP->ProcessSecondTrackLoop(eta, phi, pt, cent);
         if (LYZ_SUM_2 || LYZ_SUM_PRODUCT_2) flowLYZ->ProcessSecondTrackLoop(phi, pt, icent);
       }
     }
@@ -381,6 +400,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   corr.SaveHist();
   cov_corr.SaveHist();
   if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->SaveHist();
+  if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->SaveHist();
   if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->SaveHist();
   fo->Close();
 
