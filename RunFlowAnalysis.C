@@ -37,6 +37,7 @@
 #include <FlowAnalysisWithEtaSubEventPlane.h>
 #include <FlowAnalysisWithLeeYangZeros.h>
 #include <FlowAnalysisWithScalarProduct.h>
+#include <FlowAnalysisWithQCumulant.h>
 // #include "constants.C"
 #include "utilities.C"
 
@@ -44,14 +45,15 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-bool ETASUBEVENTPLANE_1 = 1;
+bool ETASUBEVENTPLANE_1 = 0;
 bool ETASUBEVENTPLANE_2 = 0;
 bool LYZ_SUM_1 = 0;
 bool LYZ_SUM_2 = 0;
-bool LYZ_SUM_PRODUCT_1 = 1;
+bool LYZ_SUM_PRODUCT_1 = 0;
 bool LYZ_SUM_PRODUCT_2 = 0;
-bool SCALARPRODUCT_1 = 1;
+bool SCALARPRODUCT_1 = 0;
 bool SCALARPRODUCT_2 = 0;
+bool QCUMULANT = 1;
 
 Double_t maxpt = 3.6;   // max pt for differential flow
 Double_t minpt = 0.;    // min pt for differential flow
@@ -107,7 +109,7 @@ TChain* initChain(const TString &inputFileName, const char* chainName)
     return chain;
 }
 
-#include "FlowAnalysisWithQCumulant.C"
+// #include "FlowAnalysisWithQCumulant.C"
 
 bool trackCut(PicoDstRecoTrack *recoTrack)
 {
@@ -223,8 +225,8 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   // Configure output information
   TFile *fo = new TFile(outputFileName.Data(), "recreate");
 
-  CCorrelator corr;
-  CCovCorrelator cov_corr;
+  // CCorrelator corr;
+  // CCovCorrelator cov_corr;
 
   
 
@@ -233,6 +235,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   FlowAnalysisWithEtaSubEventPlane  *flowEtaSub = NULL; // Eta-sub Event Plane
   FlowAnalysisWithLeeYangZeros      *flowLYZ    = NULL; // Lee Yang Zeros
   FlowAnalysisWithScalarProduct     *flowSP     = NULL; // Scalar Product
+  FlowAnalysisWithQCumulant         *flowQC     = NULL; // Q-Cumulant
   if (ETASUBEVENTPLANE_1) {
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
     flowEtaSub->SetFirstRun(true);
@@ -288,9 +291,14 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowSP->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
     flowSP->Init();
   }
-  CQC24   qc24;
-  CQC2eg  qc2eg;
-
+  if (QCUMULANT) {
+    flowQC = new FlowAnalysisWithQCumulant();
+    flowQC->SetEtaGap(eta_gap);
+    flowQC->Init();
+  }
+  // CQC24   qc24;
+  // CQC2eg  qc2eg;
+  Double_t pt, eta, phi, charge;
   Long64_t chain_size = chain->GetEntries();
   Long64_t n_entries = (Nevents < chain_size && Nevents > 0) ? Nevents : chain_size;
   for (Int_t iEv = 0; iEv < n_entries; iEv++)
@@ -309,21 +317,21 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     // Int_t reco_mult = recoTracks->GetEntriesFast();
     Int_t reco_mult = reader->GetRecoTrackSize();
 
-    qc24.zero();
-    qc2eg.zero();
+    // qc24.zero();
+    // qc2eg.zero();
     
     if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->Zero();
     if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->Zero();
     if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->Zero();
     Q2->Zero();
+    if (QCUMULANT) flowQC->Zero();
+    // qc24.fCentBin = icent;
+    // qc2eg.fCentBin = icent;
+
+
     
-    qc24.fCentBin = icent;
-    qc2eg.fCentBin = icent;
-
-
-    Double_t pt, eta, phi, charge;
     // Double_t cos4phi, sin4phi, cos2phi, sin2phi;
-    CPhiAngles phiAngles;
+    // CPhiAngles phiAngles;
 
     for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
     { // Track loop
@@ -341,36 +349,41 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
       Int_t ipt = findBin(pt);
       Int_t fId = findId(recoTrack);
 
-      phiAngles.recalc(phi);
+      // phiAngles.recalc(phi);
 
       if (pt > minptRF && pt < maxptRF)
       { // Reference Flow pt cut
         // 2,4-QC
-        qc24.setQxQy(phiAngles);
-        qc2eg.setQxQy(phiAngles, eta);
+        // qc24.setQxQy(phiAngles);
+        // qc2eg.setQxQy(phiAngles, eta);
         if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessFirstTrackLoop(eta, phi, pt);
         if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->ProcessFirstTrackLoop(eta, phi);
+        if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->ProcessFirstTrackLoop(phi, pt, icent);
+        Q2->CalQVector(phi, 1.);
+        if (QCUMULANT) flowQC->ProcessFirstTrackLoopRP(eta, phi);
       }
 
       // Differential Flow of 2,4-QC
-      qc24.setQP(phiAngles, ipt, charge, fId);
+      // qc24.setQP(phiAngles, ipt, charge, fId);
       
       // Differential Flow of 2-QC, eta-gapped
-      qc2eg.setPxPy(phiAngles, ipt, eta, charge, fId);
+      // qc2eg.setPxPy(phiAngles, ipt, eta, charge, fId);
       
-      if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->ProcessFirstTrackLoop(phi, pt, icent);
-      Q2->CalQVector(phi, 1.);
+      
+      
+      if (QCUMULANT) flowQC->ProcessFirstTrackLoopPOI(ipt, eta, phi, fId, charge);
     } // end of track loop
 
     // 2-QC, eta-gapped: multi-particle correlation calculation
-    qc2eg.calcMPCorr(&corr, &cov_corr);
+    // qc2eg.calcMPCorr(&corr, &cov_corr);
 
     // 2,4-QC: multi-particle correlation calculation
-    qc24.calcMPCorr(&corr, &cov_corr);
+    // qc24.calcMPCorr(&corr, &cov_corr);
 
     if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessEventAfterFirstTrackLoop(cent);
     if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->ProcessEventAfterFirstTrackLoop(cent);
     if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->ProcessEventAfterFirstTrackLoop(Q2, icent);
+    if (QCUMULANT) flowQC->ProcessEventAfterFirstTrackLoop(icent);
     if (ETASUBEVENTPLANE_2 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_2 || SCALARPRODUCT_2)
     {
       for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
@@ -397,11 +410,12 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   // Writing output
   fo->cd();
   // fo->Write();
-  corr.SaveHist();
-  cov_corr.SaveHist();
+  // corr.SaveHist();
+  // cov_corr.SaveHist();
   if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->SaveHist();
   if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->SaveHist();
   if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->SaveHist();
+  if (QCUMULANT) flowQC->SaveHist();
   fo->Close();
 
   timer.Stop();

@@ -6,6 +6,7 @@ class QVector
 {
 public:
   QVector();
+  QVector(double n);
   virtual ~QVector();
   void Zero();
   void CalQVector(const double &phi, const double &weight);
@@ -15,6 +16,7 @@ public:
   int GetMult() const { return this->fMult; }
 
 private:
+  double fNHarmonic;
   double fQx;
   double fQy;
   double fWeight;

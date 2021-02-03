@@ -14,6 +14,8 @@ set(FlowAnalysis_h_files
   "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithEtaSubEventPlane.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithLeeYangZeros.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithScalarProduct.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithQCumulant.h"
+  
 )
 
 set(FlowAnalysis_cxx_files
@@ -21,6 +23,7 @@ set(FlowAnalysis_cxx_files
   "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithEtaSubEventPlane.cxx"
   "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithLeeYangZeros.cxx"
   "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithScalarProduct.cxx"
+  "${CMAKE_CURRENT_SOURCE_DIR}/FlowAnalysisWithQCumulant.cxx"
 )
 
 set(FlowAnalysis_LinkDef

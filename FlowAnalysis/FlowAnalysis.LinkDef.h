@@ -9,5 +9,6 @@
 #pragma link C++ class FlowAnalysisWithEtaSubEventPlane+;
 #pragma link C++ class FlowAnalysisWithLeeYangZeros+;
 #pragma link C++ class FlowAnalysisWithScalarProduct+;
+#pragma link C++ class FlowAnalysisWithQCumulant+;
 
 #endif
