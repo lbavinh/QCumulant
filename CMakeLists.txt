@@ -1,7 +1,7 @@
 
 # CMakeLists.txt for FAS package. It creates a library with dictionary and a main program
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(QCumulant)
+project(MPDFlowAnalysis)
 
 # You need to tell CMake where to find the ROOT installation. This can be done
 # in a number of ways:
@@ -29,7 +29,7 @@ add_subdirectory(FlowAnalysis)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall")
 
-set(QCUMULANT_INCLUDE_DIRECTORIES
+set(FLOW_INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/PicoDst/include
   ${CMAKE_CURRENT_SOURCE_DIR}/Readers
@@ -37,9 +37,9 @@ set(QCUMULANT_INCLUDE_DIRECTORIES
   ${ROOT_INLCUDE_DIRS}
 )
 
-include_directories(${QCUMULANT_INCLUDE_DIRECTORIES})
+include_directories(${FLOW_INCLUDE_DIRECTORIES})
 
-set(QCUMULANT_INCLUDE_LIBRARIES
+set(FLOW_INCLUDE_LIBRARIES
   PicoDst
   Readers
   FlowAnalysis
@@ -48,5 +48,5 @@ set(QCUMULANT_INCLUDE_LIBRARIES
 
 # set_source_files_properties(FlowQCumulant.C PROPERTIES LANGUAGE CXX)
 
-add_executable(FlowQCumulant main.cpp)
-target_link_libraries(FlowQCumulant ${QCUMULANT_INCLUDE_LIBRARIES})
+add_executable(RunFlowAnalysis main.cpp)
+target_link_libraries(RunFlowAnalysis ${FLOW_INCLUDE_LIBRARIES})

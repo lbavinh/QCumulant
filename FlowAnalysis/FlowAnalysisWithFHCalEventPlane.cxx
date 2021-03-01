@@ -58,7 +58,7 @@ void FlowAnalysisWithFHCalEventPlane::ProcessFirstTrackLoop(const Double_t &eta,
 
 void FlowAnalysisWithFHCalEventPlane::ProcessEventAfterFirstTrackLoop(const Double_t &dCent)
 {
-  if (fQvector_L->GetMult() > 1 && fQvector_R->GetMult() > 1)
+  if (fQvector_L->GetWeight() != 0 && fQvector_R->GetWeight() != 0)
   {
     fMultCut = false;
     // fQvector_L->WeightQVector();

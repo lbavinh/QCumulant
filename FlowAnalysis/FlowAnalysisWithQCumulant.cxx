@@ -1,3 +1,9 @@
+/**
+ * Elliptic flow v2 measurements using Q-Cumulant
+ * proposed by Ante Bilandzic in https://arxiv.org/abs/1010.0233
+ * coded by Vinh Ba Luong (lbavinh@gmail.com)
+ * 25/11/2020
+ */
 #include <FlowAnalysisWithQCumulant.h>
 ClassImp(FlowAnalysisWithQCumulant);
 FlowAnalysisWithQCumulant::FlowAnalysisWithQCumulant() :

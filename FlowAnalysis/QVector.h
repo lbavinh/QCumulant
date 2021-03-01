@@ -14,6 +14,7 @@ public:
   double X() const { return this->fQx; }
   double Y() const { return this->fQy; }
   int GetMult() const { return this->fMult; }
+  double GetWeight() const { return this->fWeight; }
 
 private:
   double fNHarmonic;
