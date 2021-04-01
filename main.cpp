@@ -1,4 +1,3 @@
-// #include "FlowQCumulant.C"
 #include "RunFlowAnalysis.C"
 // C++ headers
 #include <iostream>
@@ -62,7 +61,6 @@ int main(int argc, char **argv)
       }
     }
   }
-  // FlowQCumulant(iFileName, oFileName, configFileName);
   RunFlowAnalysis(iFileName, oFileName, configFileName);
 
   return 0;

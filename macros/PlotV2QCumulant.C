@@ -1,3 +1,4 @@
+#define PLOTV2QCUMULANT
 #include "DrawTGraph.C"
 
 double Covariance(TProfile *const &hcovXY, TProfile *const &hX, TProfile *const &hY, Int_t binXY=0, Int_t binX=0, Int_t binY=0){
@@ -33,7 +34,7 @@ struct term{ // structure for "Mean squared error of MEAN" calculation, using un
 
 };
 
-void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.root"){
+void PlotV2QCumulant(TString inFileName = "test.root", TString outFileName = "graphs_v2.root"){
   TFile *inFile = new TFile(inFileName.Data(),"read");
   TFile *outFile = new TFile(outFileName.Data(),"recreate"); // Save TGraphErrors
   TString outDirName = "pics";

@@ -61,3 +61,29 @@ Double_t GetFHCalPhi(Int_t iModule)
 
   return phi;
 }
+
+TChain* initChain(const TString &inputFileName, const char* chainName)
+{
+    TChain *chain = new TChain(chainName);
+    std::ifstream file(inputFileName.Data());
+    std::string line;
+    while(std::getline(file, line))
+    {
+        chain->Add(line.c_str());
+    }
+
+    return chain;
+}
+
+Int_t findId(PicoDstMCTrack *mcTrack)
+{
+  Int_t fId = -1;
+  Int_t pdg = mcTrack->GetPdg();
+  if (pdg == 211)    fId = 1; // pion+
+  if (pdg == 321)    fId = 2; // kaon+
+  if (pdg == 2212)   fId = 3; // proton
+  if (pdg == -211)   fId = 5; // pion-
+  if (pdg == -321)   fId = 6; // kaon-
+  if (pdg == -2212)  fId = 7; // anti-proton
+  return fId;
+}

@@ -35,7 +35,7 @@
 #include <FlowAnalysisWithQCumulant.h>
 #include <FlowAnalysisWithHighOrderQCumulant.h>
 #include <FlowAnalysisWithLeeYangZerosEventPlane.h>
-// #include "constants.C"
+
 #include "utilities.C"
 
 using std::cout;
@@ -57,7 +57,7 @@ bool SCALARPRODUCT_2 = 0;
 bool QCUMULANT = 1;
 bool HIGHORDERQCUMULANT = 1;
 bool LYZEP = 0;
-
+bool readMCTracks = 1;
 Double_t maxpt = 3.6;   // max pt for differential flow
 Double_t minpt = 0.;    // min pt for differential flow
 Double_t maxptRF = 3.;  // max pt for reference flow
@@ -75,104 +75,78 @@ std::string format = "picodst";
 
 void readConfig(const TString& _strFileName)
 {
-        if (_strFileName.Length() == 0)
-        {
-                return;
-        }
+  if (_strFileName.Length() == 0)
+  {
+    return;
+  }
 
-        TEnv env(_strFileName);
+  TEnv env(_strFileName);
 
-        Nhits_cut = env.GetValue("Nhits_cut", 0);
+  Nhits_cut = env.GetValue("Nhits_cut", 0);
 
-        maxpt = env.GetValue("maxpt", 0.);
-        minpt = env.GetValue("minpt", 0.);
-        maxptRF = env.GetValue("maxptRF", 0.);
-        minptRF = env.GetValue("minptRF", 0.);
-        eta_cut = env.GetValue("eta_cut", 0.);
-        eta_gap = env.GetValue("eta_gap", 0.);
-        DCAcut = env.GetValue("DCAcut", 0.);
-        pid_probability = env.GetValue("pid_probability", 0.);
+  maxpt = env.GetValue("maxpt", 0.);
+  minpt = env.GetValue("minpt", 0.);
+  maxptRF = env.GetValue("maxptRF", 0.);
+  minptRF = env.GetValue("minptRF", 0.);
+  eta_cut = env.GetValue("eta_cut", 0.);
+  eta_gap = env.GetValue("eta_gap", 0.);
+  DCAcut = env.GetValue("DCAcut", 0.);
+  pid_probability = env.GetValue("pid_probability", 0.);
 
-        debug = env.GetValue("debug", 0);
-        Nevents = env.GetValue("Nevents", 0);
+  debug = env.GetValue("debug", 0);
+  Nevents = env.GetValue("Nevents", 0);
 
-        format = env.GetValue("format", "");
+  format = env.GetValue("format", "");
 }
 
-TChain* initChain(const TString &inputFileName, const char* chainName)
+bool trackCut(PicoDstRecoTrack *const &recoTrack)
 {
-    TChain *chain = new TChain(chainName);
-    std::ifstream file(inputFileName.Data());
-    std::string line;
-    while(std::getline(file, line))
-    {
-        chain->Add(line.c_str());
-    }
-
-    return chain;
+  if (!recoTrack) { return false; }
+  Double_t pt = recoTrack->GetPt();
+  Double_t eta = recoTrack->GetEta();
+  if (pt < minpt || pt > maxpt || fabs(eta) > eta_cut)     return false;
+  if (fabs(recoTrack->GetDCAx()) > DCAcut)        return false; // DCAx cut
+  if (fabs(recoTrack->GetDCAy()) > DCAcut)        return false; // DCAy cut
+  if (fabs(recoTrack->GetDCAz()) > DCAcut)        return false; // DCAz cut
+  if (recoTrack->GetNhits() < Nhits_cut)          return false; // TPC hits cut    
+  return true;                                   
 }
 
-// #include "FlowAnalysisWithQCumulant.C"
-
-bool trackCut(PicoDstRecoTrack *recoTrack)
+bool trackCut(PicoDstMCTrack *const &mcTrack)
 {
-    if (!recoTrack)
-    {
-        return false;
-    }
-
-    Double_t pt = recoTrack->GetPt();
-    Double_t eta = recoTrack->GetEta();
-
-    if (pt < minpt || pt > maxpt || fabs(eta) > eta_cut)
-        return false;
-    if (fabs(recoTrack->GetDCAx()) > DCAcut)
-        return false; // DCAx cut
-    if (fabs(recoTrack->GetDCAy()) > DCAcut)
-        return false; // DCAy cut
-    if (fabs(recoTrack->GetDCAz()) > DCAcut)
-        return false; // DCAz cut
-    if (recoTrack->GetNhits() < Nhits_cut)
-        return false; // TPC hits cut    
-
-    return true;                                   
+  if (!mcTrack) { return false; }
+  Double_t pt = mcTrack->GetPt();
+  Double_t eta = mcTrack->GetEta();
+  auto particle = (TParticlePDG*) TDatabasePDG::Instance()->GetParticle(mcTrack->GetPdg());
+  if (!particle) { return false; }
+  Double_t charge = 1./3.*particle->Charge();
+  if (pt < minpt || pt > maxpt || fabs(eta) > eta_cut || charge == 0) { return false; }
+  return true;
 }
 
 Int_t findBin(Double_t pt)
 {
-    Int_t ipt = -1;
-    
-    for (Int_t j = 0; j < npt; j++)
-    {
-        if (pt >= pTBin[j] && pt < pTBin[j + 1])
-        ipt = j;
-    }
-    
-    return ipt;
+  Int_t ipt = -1;
+  for (Int_t j = 0; j < npt; j++) { if (pt >= pTBin[j] && pt < pTBin[j + 1]) ipt = j; }
+  return ipt;
 }
 
 Int_t findId(PicoDstRecoTrack *recoTrack)
 {
-    Int_t fId = -1;
+  Int_t fId = -1;
 
-    Double_t charge = recoTrack->GetCharge();
-    if (recoTrack->GetTofFlag() != 0 && recoTrack->GetTofFlag() != 4)
-    {
-        if (recoTrack->GetPidProbPion() > pid_probability && charge > 0)
-            fId = 1; // pion+
-        if (recoTrack->GetPidProbKaon() > pid_probability && charge > 0)
-            fId = 2; // kaon+
-        if (recoTrack->GetPidProbProton() > pid_probability && charge > 0)
-            fId = 3; // proton
-        if (recoTrack->GetPidProbPion() > pid_probability && charge < 0)
-            fId = 5; // pion-
-        if (recoTrack->GetPidProbKaon() > pid_probability && charge < 0)
-            fId = 6; // kaon-
-        if (recoTrack->GetPidProbProton() > pid_probability && charge < 0)
-            fId = 7; // antiproton
-    }
+  Double_t charge = recoTrack->GetCharge();
+  if (recoTrack->GetTofFlag() != 0 && recoTrack->GetTofFlag() != 4)
+  {
+    if (recoTrack->GetPidProbPion() > pid_probability && charge > 0)   fId = 1; // pion+
+    if (recoTrack->GetPidProbKaon() > pid_probability && charge > 0)   fId = 2; // kaon+
+    if (recoTrack->GetPidProbProton() > pid_probability && charge > 0) fId = 3; // proton
+    if (recoTrack->GetPidProbPion() > pid_probability && charge < 0)   fId = 5; // pion-
+    if (recoTrack->GetPidProbKaon() > pid_probability && charge < 0)   fId = 6; // kaon-
+    if (recoTrack->GetPidProbProton() > pid_probability && charge < 0) fId = 7; // antiproton
+  }
 
-    return fId;
+  return fId;
 }
 
 void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString configFileName = "")
@@ -187,18 +161,18 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
 
   if (debug)
   {
-        cout << "Nevents = " << Nevents << endl;
-        cout << "Nhits_cut = " << Nhits_cut << endl;
+    cout << "Nevents = " << Nevents << endl;
+    cout << "Nhits_cut = " << Nhits_cut << endl;
 
-        cout << "maxpt = " << maxpt << endl;
-        cout << "minpt = " << minpt << endl;
-        cout << "maxptRF = " << maxptRF << endl;
-        cout << "minptRF = " << minptRF << endl;
-        cout << "eta_cut = " << eta_cut << endl;
-        cout << "eta_gap = " << eta_gap << endl;
-        cout << "DCAcut = " << DCAcut << endl;
-        cout << "pid_probability = " << pid_probability << endl;
-        cout << "format = " << format << endl;
+    cout << "maxpt = " << maxpt << endl;
+    cout << "minpt = " << minpt << endl;
+    cout << "maxptRF = " << maxptRF << endl;
+    cout << "minptRF = " << minptRF << endl;
+    cout << "eta_cut = " << eta_cut << endl;
+    cout << "eta_gap = " << eta_gap << endl;
+    cout << "DCAcut = " << DCAcut << endl;
+    cout << "pid_probability = " << pid_probability << endl;
+    cout << "format = " << format << endl;
   }
 
   if ((LYZ_SUM_1 && LYZ_SUM_PRODUCT_1) || (LYZ_SUM_2 && LYZ_SUM_PRODUCT_2))
@@ -247,6 +221,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
     flowEtaSub->SetFirstRun(false);
     flowEtaSub->SetEtaGap(eta_gap);
+    flowEtaSub->SetDebugFlag(debug);
     flowEtaSub->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
     flowEtaSub->Init();
   }
@@ -342,7 +317,8 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowLYZEP->SetInputFileFromFirstAndSecondRun("FirstRun.root", "SecondRun.root");
     flowLYZEP->Init();
   }
-  Double_t pt, eta, phi, charge, energy;
+  Int_t icent, reco_mult, ipt, fId;
+  Double_t bimp, cent, pt, eta, phi, charge, energy;
   Long64_t chain_size = chain->GetEntries();
   Long64_t n_entries = (Nevents < chain_size && Nevents > 0) ? Nevents : chain_size;
   cout << "Hi Master, let's do some physics together..." << endl;
@@ -352,16 +328,17 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
       std::cout << "Event [" << iEv << "/" << n_entries << "]" << std::endl;
     // chain->GetEntry(iEv);
     mcEvent = reader->ReadMcEvent(iEv);
-    
+ 
     // Read MC event
-    Double_t bimp = mcEvent->GetB();
-    Double_t cent = CentB(bimp);
+    bimp = mcEvent->GetB();
+    cent = CentB(bimp);
     if (cent == -1)
       continue;
-    Int_t icent = GetCentBin(cent);
-    // Int_t reco_mult = recoTracks->GetEntriesFast();
-    Int_t reco_mult = reader->GetRecoTrackSize();
+    icent = GetCentBin(cent);
     
+    if (readMCTracks) reco_mult = reader->GetMcTrackSize();
+    else reco_mult = reader->GetRecoTrackSize();
+
     if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->Zero();
     if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->Zero();
     if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->Zero();
@@ -371,9 +348,10 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     if (QCUMULANT) flowQC->Zero();
     if (HIGHORDERQCUMULANT) flowHighQC->Zero();
     if (LYZEP) flowLYZEP->Zero();
-    Int_t Nmodules = reader->GetNFHCalModules();
-    if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2)
+    
+    if ((FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) && !readMCTracks)
     {
+      Int_t Nmodules = reader->GetNFHCalModules();
       for (Int_t iModule = 0; iModule < Nmodules; iModule++)
       {
         auto module = (PicoDstFHCal *) reader->ReadFHCalModule(iModule);
@@ -384,28 +362,43 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessFirstTrackLoopFHCal(eta, phi, energy);
       }
     }
-
+    
     for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
     { // Track loop
-
-      auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
-      if (!trackCut(recoTrack))
+      if (readMCTracks)
       {
-        continue;
+        auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(iTrk);
+        
+        if (!mcTrack) { cout << "skip mcTrack" << endl; continue;}
+        pt = mcTrack->GetPt();
+        eta = mcTrack->GetEta();
+        phi = mcTrack->GetPhi();
+        if ((FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) && readMCTracks)
+        {
+          if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->ProcessFirstTrackLoop(eta, phi, pt);
+          if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessFirstTrackLoopFHCal(eta, phi, pt);          
+        }
+        if (!trackCut(mcTrack)) { continue; } // TPC cut
+        auto particle = (TParticlePDG*) TDatabasePDG::Instance()->GetParticle(mcTrack->GetPdg());   
+        charge = 1./3.*particle->Charge();
+        fId = findId(mcTrack);
       }
-      
-      pt = recoTrack->GetPt();
-      eta = recoTrack->GetEta();
-      phi = recoTrack->GetPhi();
-      charge = recoTrack->GetCharge();
-
-      Int_t ipt = findBin(pt);
-      Int_t fId = findId(recoTrack);
-
+      else
+      {
+        auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
+        if (!trackCut(recoTrack))
+        {
+          continue;
+        }
+        pt = recoTrack->GetPt();
+        eta = recoTrack->GetEta();
+        phi = recoTrack->GetPhi();
+        charge = recoTrack->GetCharge();
+        fId = findId(recoTrack);
+      }
+      ipt = findBin(pt);
       if (pt > minptRF && pt < maxptRF)
       { // Reference Flow pt cut
-        // 2,4-QC
-
         if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessFirstTrackLoop(eta, phi, pt);
         if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessFirstTrackLoopTPC(eta, phi, pt);
         if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->ProcessFirstTrackLoop(eta, phi);
@@ -417,7 +410,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
 
       if (QCUMULANT) flowQC->ProcessFirstTrackLoopPOI(ipt, eta, phi, fId, charge);
     } // end of track loop
-
+    
     if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessEventAfterFirstTrackLoop(cent);
     if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessEventAfterFirstTrackLoop(cent);    
     if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->ProcessEventAfterFirstTrackLoop(cent);
@@ -430,16 +423,24 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     {
       for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
       { // 2nd Track loop
-        auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
-        if (!trackCut(recoTrack))
+        if (readMCTracks)
         {
-          continue;
+          auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(iTrk);
+          pt = mcTrack->GetPt();
+          eta = mcTrack->GetEta();
+          phi = mcTrack->GetPhi();
+          if (!trackCut(mcTrack)) { continue; }
+        }
+        else 
+        {
+          auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk); 
+          pt = recoTrack->GetPt();
+          eta = recoTrack->GetEta();
+          phi = recoTrack->GetPhi();
+          charge = recoTrack->GetCharge();
+          if (!trackCut(recoTrack)) { continue; }
         }
 
-        pt = recoTrack->GetPt();
-        eta = recoTrack->GetEta();
-        phi = recoTrack->GetPhi();
-        charge = recoTrack->GetCharge();
 
         if (ETASUBEVENTPLANE_2) flowEtaSub->ProcessSecondTrackLoop(eta, phi, pt, cent);
         if (THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessSecondTrackLoop(eta, phi, pt, cent);
@@ -449,13 +450,11 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         if (LYZEP) flowLYZEP->ProcessSecondTrackLoop(eta, phi, pt, cent);
       }
     }
-
+    
   } // end event loop
-
+  
   // Writing output
   fo->cd();
-  // fo->Write();
-
   if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->SaveHist();
   if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->SaveHist();
   if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->SaveHist();

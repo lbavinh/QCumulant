@@ -1,5 +1,4 @@
 #include <vector>
-
 #include <RtypesCore.h>
 #include <TString.h>
 

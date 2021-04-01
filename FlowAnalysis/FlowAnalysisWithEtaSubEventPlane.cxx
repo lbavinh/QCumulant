@@ -81,6 +81,15 @@ void FlowAnalysisWithEtaSubEventPlane::GetRes()
     {
       fRes2[ic] = TMath::Sqrt(fPrRes->GetBinContent(ic+1));
     }
+    if (fDebug)
+    {
+      cout << "TPC Resolution (2-eta-sub TPC event plane):" << endl;
+      for (Int_t ic = 0; ic < ncent; ic++)
+      {
+        cout << fRes2[ic] <<", ";
+      }
+      cout << endl;
+    }
   }
 }
 
