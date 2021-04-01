@@ -1,3 +1,4 @@
+#define PLOTV2QCUMULANT
 #include "DrawTGraph.C"
 
 double Covariance(TProfile *const &hcovXY, TProfile *const &hX, TProfile *const &hY, Int_t binXY=0, Int_t binX=0, Int_t binY=0){
@@ -33,7 +34,7 @@ struct term{ // structure for "Mean squared error of MEAN" calculation, using un
 
 };
 
-void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.root"){
+void PlotV2QCumulant(TString inFileName = "test.root", TString outFileName = "graphs_v2.root"){
   TFile *inFile = new TFile(inFileName.Data(),"read");
   TFile *outFile = new TFile(outFileName.Data(),"recreate"); // Save TGraphErrors
   TString outDirName = "pics";
@@ -188,7 +189,7 @@ void v2plot(TString inFileName = "test.root", TString outFileName = "graphs_v2.r
         // v22
         term cor2red = term(pReducedCorrelator2_cent[id][icent],ipt);
         double v22Dif = cor2red.mVal/v22;
-        // if (id==8 && icent==3) cout << v22Dif <<" ";
+        if (id==8 && icent==3) cout << v22Dif <<" ";
         double cov22prime = Covariance(pCov22Red_cent[id][icent],pCorrelator2,pReducedCorrelator2_cent[id][icent],ipt,icent,ipt);
         double ev22Dif = sqrt(0.25*pow(cor2.mVal,-3)*(pow(cor2red.mVal,2)*cor2.mMSE
                             + 4*pow(cor2.mVal,2)*cor2red.mMSE - 4*cor2.mVal*cor2red.mVal*cov22prime));

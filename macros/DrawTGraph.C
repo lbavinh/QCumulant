@@ -4,7 +4,7 @@ TCanvas *DrawTGraph(std::vector<TGraphErrors*> vgr, TString str,
                     Double_t x_low=0.0, Double_t x_high=1.0,
                     Double_t y_low=0.0, Double_t y_high=1.0,
                     Double_t leg_x_low=0.22, Double_t leg_y_low=0.55,
-                    Double_t leg_x_high=0.55, Double_t leg_y_high=0.89,TString strModel="", TString strCent="", bool drawLeg=1)
+                    Double_t leg_x_high=0.55, Double_t leg_y_high=0.89,TString strModel="", TString strCent="", bool drawLeg=1, TString titleRatioPlot = "Ratio")
 {
   // Setting up global variables for the plot
   gROOT->SetStyle("Pub");
@@ -171,7 +171,7 @@ TCanvas *DrawTGraph(std::vector<TGraphErrors*> vgr, TString str,
     vgrRatio.at(igr)->GetYaxis()->SetTitleSize(0.12);
 
     // vgrRatio.at(igr)->GetYaxis()->SetTitle(Form("%s/%s",vgr.at(igr+1)->GetTitle(),vgr.at(0)->GetTitle()));
-    vgrRatio.at(igr)->GetYaxis()->SetTitle(Form("#frac{[1,2]}{[3]}"));
+    vgrRatio.at(igr)->GetYaxis()->SetTitle(titleRatioPlot.Data());
     vgrRatio.at(igr)->GetYaxis()->SetTitleOffset(0.5);
     vgrRatio.at(igr)->GetXaxis()->SetTitle(Form("%s",vgr.at(0)->GetXaxis()->GetTitle()));
     vgrRatio.at(igr)->GetYaxis()->SetNdivisions(504);
@@ -245,4 +245,79 @@ TCanvas *DrawTGraph(std::vector<TGraphErrors*> vgr, TString str,
   }
 
   return canv;
+}
+
+TGraphErrors* Converter(const TProfile* const &pr)
+{
+  const Int_t iNbins = pr->GetNbinsX();
+  std::vector<Double_t> x, errX;
+  std::vector<Double_t> y, errY;
+  for (Int_t i = 0; i < iNbins; i++)
+  {
+    x.push_back( pr->GetBinCenter(i+1) );
+    y.push_back( pr->GetBinContent(i+1) );
+    errX.push_back(0.);
+    errY.push_back( pr->GetBinError(i+1) );
+  }
+  TGraphErrors *gr = new TGraphErrors(iNbins, &x[0], &y[0], &errX[0], &errY[0]);
+  return gr;
+}
+
+TGraphErrors* Ratio(const TGraphErrors* const& gr1, const TGraphErrors* const& gr2)
+{
+  Int_t iNbins = gr2->GetN();
+  Double_t *vx = (Double_t*) gr2->GetX();
+  Double_t *vy2 = (Double_t*) gr2->GetY();
+  Double_t *vy1 = (Double_t*) gr1->GetY();
+  Double_t *vey2 = (Double_t*) gr2->GetEY();
+  Double_t *vey1 = (Double_t*) gr1->GetEY();
+  vector<Double_t> ratio, ratioErr, XErr;
+  for (Int_t i = 0; i < iNbins; i++)
+  {
+    XErr.push_back(0.);
+    Double_t dRatio = vy1[i] / vy2[i];
+    ratio.push_back(dRatio);
+    Double_t dRatioErr = dRatio*(TMath::Sqrt(TMath::Power(vey2[i]/vy2[i],2)+TMath::Power(vey1[i]/vy1[i],2)));
+    ratioErr.push_back(dRatioErr);
+  }
+  TGraphErrors *grRatio = new TGraphErrors(iNbins, &vx[0], &ratio[0], &XErr[0], &ratioErr[0]);
+  grRatio->SetMarkerStyle(gr1->GetMarkerStyle());
+  grRatio->SetMarkerColor(gr1->GetMarkerStyle());
+  grRatio->SetLineColor(gr1->GetMarkerStyle());
+  return grRatio;
+}
+
+TGraphErrors* Blue(TGraphErrors *const &gr)
+{
+  gr->SetMarkerColor(kBlue+3);
+  gr->SetLineColor(kBlue+3);
+  return gr;
+}
+
+TGraphErrors* Green(TGraphErrors *const &gr)
+{
+  gr->SetMarkerColor(kGreen+2);
+  gr->SetLineColor(kGreen+2);
+  return gr;
+}
+
+TGraphErrors* Yellow(TGraphErrors *const &gr)
+{
+  gr->SetMarkerColor(kYellow+3);
+  gr->SetLineColor(kYellow+3);
+  return gr;
+}
+
+TGraphErrors* Red(TGraphErrors *const &gr)
+{
+  gr->SetMarkerColor(kRed+2);
+  gr->SetLineColor(kRed+2);
+  return gr;
+}
+
+TGraphErrors* Black(TGraphErrors *const &gr)
+{
+  gr->SetMarkerColor(kBlack);
+  gr->SetLineColor(kBlack);
+  return gr;
 }
