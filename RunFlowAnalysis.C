@@ -5,6 +5,7 @@
 #include <TStopwatch.h>
 #include <TChain.h>
 #include <TFile.h>
+#include <TDirectoryFile.h>
 #include <TMath.h>
 #include <TClonesArray.h>
 #include <TH2F.h>
@@ -25,7 +26,7 @@
 
 #include <IReader.h>
 #include <PicoDstReader.h>
-
+// Flow method headers
 #include <QVector.h>
 #include <FlowAnalysisWithEtaSubEventPlane.h>
 #include <FlowAnalysisWithThreeEtaSubEventPlane.h>
@@ -41,30 +42,31 @@
 using std::cout;
 using std::cerr;
 using std::endl;
-
-bool ETASUBEVENTPLANE_1 = 1;
-bool ETASUBEVENTPLANE_2 = 0;
-bool THREEETASUBEVENTPLANE_1 = 1;
-bool THREEETASUBEVENTPLANE_2 = 0;
-bool FHCALEVENTPLANE_1 = 1;
-bool FHCALEVENTPLANE_2 = 0;
-bool LYZ_SUM_1 = 0;
-bool LYZ_SUM_2 = 0;
-bool LYZ_SUM_PRODUCT_1 = 0;
-bool LYZ_SUM_PRODUCT_2 = 0;
-bool SCALARPRODUCT_1 = 1;
-bool SCALARPRODUCT_2 = 0;
-bool QCUMULANT = 1;
-bool HIGHORDERQCUMULANT = 1;
-bool LYZEP = 0;
-bool readMCTracks = 1;
-Double_t maxpt = 3.6;   // max pt for differential flow
-Double_t minpt = 0.;    // min pt for differential flow
-Double_t maxptRF = 3.;  // max pt for reference flow
-Double_t minptRF = 0.2; // min pt for reference flow
-Double_t eta_cut = 1.5;  // pseudorapidity acceptance window for flow measurements 
-Double_t eta_gap = 0.05; // +-0.05, eta-gap between 2 eta sub-event of two-particle cumulants method with eta-gap
-Int_t Nhits_cut = 16;   // minimum nhits of reconstructed tracks
+// Flags for flow methods, where *_1 is the first run over the data and *_2 is the second run (need to move these flags to config file!!)
+Bool_t ETASUBEVENTPLANE_1 = 0;        // Eta-sub EP (first run)
+Bool_t ETASUBEVENTPLANE_2 = 1;        // Eta-sub EP (second run)
+Bool_t THREEETASUBEVENTPLANE_1 = 0;   // 3 eta-sub method (first run)
+Bool_t THREEETASUBEVENTPLANE_2 = 0;   // 3 eta-sub method (second run)
+Bool_t FHCALEVENTPLANE_1 = 0;         // FHCal EP (w.r.t. 1-st order harmonic) (first run)
+Bool_t FHCALEVENTPLANE_2 = 0;         // FHCal EP (w.r.t. 1-st order harmonic) (second run)
+Bool_t LYZ_SUM_1 = 0;                 // Lee-Yang Zeros using sum generating function (first run)
+Bool_t LYZ_SUM_2 = 0;                 // Lee-Yang Zeros using sum generating function (second run)
+Bool_t LYZ_SUM_PRODUCT_1 = 0;         // Lee-Yang Zeros using product generating function (first run) (integrated with sum GF at the moment, will be separated soon)
+Bool_t LYZ_SUM_PRODUCT_2 = 0;         // Lee-Yang Zeros using product generating function (second run) (integrated with sum GF at the moment, will be separated soon)
+Bool_t SCALARPRODUCT_1 = 0;           // Scalar product using eta-sub method (first run)
+Bool_t SCALARPRODUCT_2 = 0;           // Scalar product using eta-sub method (second run)
+Bool_t QCUMULANT = 0;                 // Q-Cumulants: 2- and 4-particle cumulants obtained by both standard and subevent methods 
+Bool_t HIGHORDERQCUMULANT = 0;        // Q-Cumulants: 2- up to 8-particle cumulants using recursive algorithm
+Bool_t LYZEP = 0;                     // one needs to run LYZ_SUM_1 & 2 (or LYZ_SUM_PRODUCT_1 & 2) before set this flag to kTRUE
+Bool_t readMCTracks = 0; // 0 - read reco tracks, 1 - read MC tracks
+// Kinetic cuts by default if not using config file
+Double_t maxpt = 3.6;     // max pt for differential flow
+Double_t minpt = 0.;      // min pt for differential flow
+Double_t maxptRF = 3.;    // max pt for reference flow
+Double_t minptRF = 0.2;   // min pt for reference flow
+Double_t eta_cut = 1.5;   // pseudorapidity acceptance window for flow measurements 
+Double_t eta_gap = 0.05;  // +-0.05, eta-gap between 2 eta sub-event
+Int_t Nhits_cut = 16;     // minimum nhits of reconstructed tracks
 Double_t DCAcut = 0.5;
 Double_t pid_probability = 0.9;
 Long64_t Nevents = -1;
@@ -99,7 +101,7 @@ void readConfig(const TString& _strFileName)
   format = env.GetValue("format", "");
 }
 
-bool trackCut(PicoDstRecoTrack *const &recoTrack)
+Bool_t trackCut(PicoDstRecoTrack *const &recoTrack)
 {
   if (!recoTrack) { return false; }
   Double_t pt = recoTrack->GetPt();
@@ -112,7 +114,7 @@ bool trackCut(PicoDstRecoTrack *const &recoTrack)
   return true;                                   
 }
 
-bool trackCut(PicoDstMCTrack *const &mcTrack)
+Bool_t trackCut(PicoDstMCTrack *const &mcTrack)
 {
   if (!mcTrack) { return false; }
   Double_t pt = mcTrack->GetPt();
@@ -201,25 +203,27 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
 
   // Configure output information
   TFile *fo = new TFile(outputFileName.Data(), "recreate");
-
-  FlowAnalysisWithEtaSubEventPlane  *flowEtaSub  = NULL; // Eta-sub Event Plane
-  FlowAnalysisWithThreeEtaSubEventPlane *flowThreeEtaSub = NULL; // 3-Eta-sub Event Plane
-  FlowAnalysisWithFHCalEventPlane   *flowFHCalEP = NULL; // FHCal Event Plane
-  FlowAnalysisWithLeeYangZeros      *flowLYZ     = NULL; // Lee Yang Zeros
-  FlowAnalysisWithScalarProduct     *flowSP      = NULL; // Scalar Product
-  FlowAnalysisWithQCumulant         *flowQC      = NULL; // Q-Cumulant
-  FlowAnalysisWithHighOrderQCumulant *flowHighQC = NULL;
-  FlowAnalysisWithLeeYangZerosEventPlane *flowLYZEP = NULL;
+  
+  FlowAnalysisWithEtaSubEventPlane  *flowEtaSub  = nullptr; // Eta-sub Event Plane
+  FlowAnalysisWithThreeEtaSubEventPlane *flowThreeEtaSub = nullptr; // 3-Eta-sub Event Plane
+  FlowAnalysisWithFHCalEventPlane   *flowFHCalEP = nullptr; // FHCal Event Plane
+  FlowAnalysisWithLeeYangZeros      *flowLYZ     = nullptr; // Lee Yang Zeros
+  FlowAnalysisWithScalarProduct     *flowSP      = nullptr; // Scalar Product
+  FlowAnalysisWithQCumulant         *flowQC      = nullptr; // Q-Cumulant
+  FlowAnalysisWithHighOrderQCumulant *flowHighQC = nullptr;
+  FlowAnalysisWithLeeYangZerosEventPlane *flowLYZEP = nullptr;
 
   if (ETASUBEVENTPLANE_1) {
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
     flowEtaSub->SetFirstRun(true);
+    flowEtaSub->SetHarmonic(3);
     flowEtaSub->SetEtaGap(eta_gap);
     flowEtaSub->Init();
   }
   if (ETASUBEVENTPLANE_2) {
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
     flowEtaSub->SetFirstRun(false);
+    flowEtaSub->SetHarmonic(3);
     flowEtaSub->SetEtaGap(eta_gap);
     flowEtaSub->SetDebugFlag(debug);
     flowEtaSub->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
