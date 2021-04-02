@@ -5,17 +5,18 @@
 ClassImp(FlowAnalysisWithScalarProduct);
 
 FlowAnalysisWithScalarProduct::FlowAnalysisWithScalarProduct() :
-  fFirstRun(true),
-  fMultCut(true),
+  fFirstRun(kTRUE),
+  fMultCut(kTRUE),
+  fHarmonic(2),
+  fEtaGap(0.),
   fcQVector_L(0.,0.),
   fcQVector_R(0.,0.),
-  fQvector_L(NULL),
-  fQvector_R(NULL),
-  // fDenom(NULL),
-  fEtaGap(0.),
+  fQvector_L(nullptr),
+  fQvector_R(nullptr),
+  fDenom(),
   fstrInputFileFromFirstRun(""),
-  fPrDenom(NULL),
-  fPrV2ScalarProduct(NULL)
+  fPrDenom(nullptr),
+  fPrV2ScalarProduct(nullptr)
 {
 }
 
@@ -26,8 +27,8 @@ FlowAnalysisWithScalarProduct::~FlowAnalysisWithScalarProduct()
 void FlowAnalysisWithScalarProduct::Init()
 {
   fPrDenom = new TProfile("prDenomSP", "Denominator of SP method", ncent, &bin_cent[0]);
-  fQvector_L = new QVector();
-  fQvector_R = new QVector();
+  fQvector_L = new QVector(fHarmonic);
+  fQvector_R = new QVector(fHarmonic);
   if (!fFirstRun) 
   {
     fPrV2ScalarProduct = new TProfile3D("prV2ScalarProduct", "", ncent, &bin_cent[0], npt, &pTBin[0], netaBin, &etaBin[0]);
@@ -43,9 +44,9 @@ void FlowAnalysisWithScalarProduct::Zero()
   fQvector_R->Zero();
 }
 
-void FlowAnalysisWithScalarProduct::ProcessFirstTrackLoop(const double &eta, const double &phi)
+void FlowAnalysisWithScalarProduct::ProcessFirstTrackLoop(const Double_t &eta, const Double_t &phi)
 {
-  if (eta < - fEtaGap)
+  if (eta < -fEtaGap)
   {
     fQvector_L->CalQVector(phi, 1.);
   }
@@ -55,20 +56,18 @@ void FlowAnalysisWithScalarProduct::ProcessFirstTrackLoop(const double &eta, con
   }
 }
 
-void FlowAnalysisWithScalarProduct::ProcessEventAfterFirstTrackLoop(const double &dCent)
+void FlowAnalysisWithScalarProduct::ProcessEventAfterFirstTrackLoop(const Double_t &dCent)
 {
   if (fQvector_L->GetMult() > mult_EP_cut && fQvector_R->GetMult() > mult_EP_cut)
   {
-    fMultCut = false;
-    // fQvector_L->WeightQVector();
-    // fQvector_R->WeightQVector();
+    fMultCut = kFALSE;
     fcQVector_L = TComplex( fQvector_L->X(), fQvector_L->Y() );
     fcQVector_R = TComplex( fQvector_R->X(), fQvector_R->Y() );
     fPrDenom->Fill(dCent, (fcQVector_L * TComplex::Conjugate(fcQVector_R)).Re() );
   }
   else
   {
-    fMultCut = true;
+    fMultCut = kTRUE;
   }
   
 }
@@ -87,12 +86,12 @@ void FlowAnalysisWithScalarProduct::GetRes()
   }
 }
 
-void FlowAnalysisWithScalarProduct::ProcessSecondTrackLoop(const double &eta, const double &phi, const double &pt, const double &dCent)
+void FlowAnalysisWithScalarProduct::ProcessSecondTrackLoop(const Double_t &eta, const Double_t &phi, const Double_t &pt, const Double_t &dCent)
 {
   if (!fMultCut && !fFirstRun)
   {
-    TComplex u2 = TComplex(TMath::Cos(2.0 * phi), TMath::Sin(2.0 * phi));
-    double v2ScalarProduct = -999.0;
+    TComplex u2 = TComplex(TMath::Cos(fHarmonic * phi), TMath::Sin(fHarmonic * phi));
+    Double_t v2ScalarProduct = -999.0;
     if (eta < -fEtaGap)
     {
       v2ScalarProduct = ( u2 * TComplex::Conjugate(fcQVector_R) ).Re();

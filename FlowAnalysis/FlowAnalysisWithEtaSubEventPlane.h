@@ -41,12 +41,12 @@ private:
   Bool_t fMultCut;
   Bool_t fDebug;
   Int_t fHarmonic;
+  Double_t fEtaGap;
   Double_t fPsi_L;
   Double_t fPsi_R;
   QVector *fQvector_L;
   QVector *fQvector_R;
   Double_t fRes2[ncent];
-  Double_t fEtaGap;
   TString fstrInputFileFromFirstRun;
   TProfile *fPrRes;
   TProfile3D *fPrV2EtaSubEventPlane;

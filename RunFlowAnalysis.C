@@ -59,6 +59,7 @@ Bool_t QCUMULANT = 0;                 // Q-Cumulants: 2- and 4-particle cumulant
 Bool_t HIGHORDERQCUMULANT = 0;        // Q-Cumulants: 2- up to 8-particle cumulants using recursive algorithm
 Bool_t LYZEP = 0;                     // one needs to run LYZ_SUM_1 & 2 (or LYZ_SUM_PRODUCT_1 & 2) before set this flag to kTRUE
 Bool_t readMCTracks = 0; // 0 - read reco tracks, 1 - read MC tracks
+Int_t harmonic = 3; // set harmonic for eta-sub event plane and scalar product method
 // Kinetic cuts by default if not using config file
 Double_t maxpt = 3.6;     // max pt for differential flow
 Double_t minpt = 0.;      // min pt for differential flow
@@ -216,14 +217,14 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (ETASUBEVENTPLANE_1) {
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
     flowEtaSub->SetFirstRun(true);
-    flowEtaSub->SetHarmonic(3);
+    flowEtaSub->SetHarmonic(harmonic);
     flowEtaSub->SetEtaGap(eta_gap);
     flowEtaSub->Init();
   }
   if (ETASUBEVENTPLANE_2) {
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
     flowEtaSub->SetFirstRun(false);
-    flowEtaSub->SetHarmonic(3);
+    flowEtaSub->SetHarmonic(harmonic);
     flowEtaSub->SetEtaGap(eta_gap);
     flowEtaSub->SetDebugFlag(debug);
     flowEtaSub->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
@@ -290,12 +291,14 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (SCALARPRODUCT_1) {
     flowSP = new FlowAnalysisWithScalarProduct();
     flowSP->SetFirstRun(true);
+    flowSP->SetHarmonic(harmonic);
     flowSP->SetEtaGap(eta_gap);
     flowSP->Init();
   }
   if (SCALARPRODUCT_2) {
     flowSP = new FlowAnalysisWithScalarProduct();
     flowSP->SetFirstRun(false);
+    flowSP->SetHarmonic(harmonic);
     flowSP->SetEtaGap(eta_gap);
     flowSP->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
     flowSP->Init();
