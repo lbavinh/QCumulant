@@ -2,17 +2,19 @@
 ClassImp(FlowAnalysisWithEtaSubEventPlane);
 
 FlowAnalysisWithEtaSubEventPlane::FlowAnalysisWithEtaSubEventPlane() :
-  fFirstRun(true),
-  fMultCut(true),
+  fFirstRun(kTRUE),
+  fMultCut(kTRUE),
+  fDebug(kFALSE),
+  fHarmonic(2),
   fPsi_L(0.),
   fPsi_R(0.),
-  fQvector_L(NULL),
-  fQvector_R(NULL),
-  // fRes2(NULL),
+  fQvector_L(nullptr),
+  fQvector_R(nullptr),
+  fRes2(),
   fEtaGap(0.),
   fstrInputFileFromFirstRun(""),
-  fPrRes(NULL),
-  fPrV2EtaSubEventPlane(NULL)
+  fPrRes(nullptr),
+  fPrV2EtaSubEventPlane(nullptr)
 {
 }
 
@@ -23,8 +25,8 @@ FlowAnalysisWithEtaSubEventPlane::~FlowAnalysisWithEtaSubEventPlane()
 void FlowAnalysisWithEtaSubEventPlane::Init()
 {
   fPrRes = new TProfile("prRes", "EP resolution", ncent, &bin_cent[0]);
-  fQvector_L = new QVector();
-  fQvector_R = new QVector();
+  fQvector_L = new QVector(fHarmonic);
+  fQvector_R = new QVector(fHarmonic);
   if (!fFirstRun) 
   {
     fPrV2EtaSubEventPlane = new TProfile3D("prV2EtaSubEventPlane", "", ncent, &bin_cent[0], npt, &pTBin[0], netaBin, &etaBin[0]);
@@ -40,7 +42,7 @@ void FlowAnalysisWithEtaSubEventPlane::Zero()
   fQvector_R->Zero();
 }
 
-void FlowAnalysisWithEtaSubEventPlane::ProcessFirstTrackLoop(const double &eta, const double &phi, const double &pt)
+void FlowAnalysisWithEtaSubEventPlane::ProcessFirstTrackLoop(const Double_t &eta, const Double_t &phi, const Double_t &pt)
 {
   if (eta < - fEtaGap)
   {
@@ -52,20 +54,20 @@ void FlowAnalysisWithEtaSubEventPlane::ProcessFirstTrackLoop(const double &eta, 
   }
 }
 
-void FlowAnalysisWithEtaSubEventPlane::ProcessEventAfterFirstTrackLoop(const double &dCent)
+void FlowAnalysisWithEtaSubEventPlane::ProcessEventAfterFirstTrackLoop(const Double_t &dCent)
 {
   if (fQvector_L->GetMult() > mult_EP_cut && fQvector_R->GetMult() > mult_EP_cut)
   {
-    fMultCut = false;
+    fMultCut = kFALSE;
     fQvector_L->WeightQVector();
     fQvector_R->WeightQVector();
-    fPsi_L = 0.5 * TMath::ATan2(fQvector_L->Y(), fQvector_L->X());
-    fPsi_R = 0.5 * TMath::ATan2(fQvector_R->Y(), fQvector_R->X());
-    fPrRes->Fill(dCent, TMath::Cos( 2.0 * (fPsi_L - fPsi_R) ));
+    fPsi_L = TMath::ATan2(fQvector_L->Y(), fQvector_L->X())/fHarmonic;
+    fPsi_R = TMath::ATan2(fQvector_R->Y(), fQvector_R->X())/fHarmonic;
+    if (fFirstRun) fPrRes->Fill(dCent, TMath::Cos( fHarmonic * (fPsi_L - fPsi_R) ));
   }
   else
   {
-    fMultCut = true;
+    fMultCut = kTRUE;
   }
   
 }
@@ -74,7 +76,8 @@ void FlowAnalysisWithEtaSubEventPlane::GetRes()
 {
   if (!fFirstRun)
   {
-    if (fstrInputFileFromFirstRun == "") { cerr << "Warning: fstrInputFileFromFirstRun="" " << endl;}
+    if (fstrInputFileFromFirstRun == "") 
+    { cerr << "Warning: in FlowAnalysisWithEtaSubEventPlane::GetRes() fstrInputFileFromFirstRun="" " << endl;}
     TFile *fi = new TFile(fstrInputFileFromFirstRun.Data(), "read");
     fPrRes = (TProfile*)fi->Get("prRes");
     for (int ic = 0; ic < ncent; ic++)
@@ -83,7 +86,7 @@ void FlowAnalysisWithEtaSubEventPlane::GetRes()
     }
     if (fDebug)
     {
-      cout << "TPC Resolution (2-eta-sub TPC event plane):" << endl;
+      cout << "TPC EP Resolution w.r.t. " << fHarmonic << "-th harmonic (2-eta-sub):" << endl;
       for (Int_t ic = 0; ic < ncent; ic++)
       {
         cout << fRes2[ic] <<", ";
@@ -93,18 +96,18 @@ void FlowAnalysisWithEtaSubEventPlane::GetRes()
   }
 }
 
-void FlowAnalysisWithEtaSubEventPlane::ProcessSecondTrackLoop(const double &eta, const double &phi, const double &pt, const double &dCent)
+void FlowAnalysisWithEtaSubEventPlane::ProcessSecondTrackLoop(const Double_t &eta, const Double_t &phi, const Double_t &pt, const Double_t &dCent)
 {
   if (!fMultCut && !fFirstRun)
   {
-    double v2EtaSubEventPlane = -999.0;
+    Double_t v2EtaSubEventPlane = -999.0;
     if (eta < -fEtaGap)
     {
-      v2EtaSubEventPlane = TMath::Cos( 2.0 * (phi - fPsi_R) );
+      v2EtaSubEventPlane = TMath::Cos( fHarmonic * (phi - fPsi_R) );
     }
     else if (eta > fEtaGap)
     {
-      v2EtaSubEventPlane = TMath::Cos( 2.0 * (phi - fPsi_L) );
+      v2EtaSubEventPlane = TMath::Cos( fHarmonic * (phi - fPsi_L) );
     }
     else { return; }
     int icent = fPrRes->FindBin(dCent) - 1;
@@ -120,4 +123,11 @@ void FlowAnalysisWithEtaSubEventPlane::SaveHist()
 {
   fPrRes->Write();
   if (!fFirstRun) fPrV2EtaSubEventPlane->Write();
+}
+
+void FlowAnalysisWithEtaSubEventPlane::SaveHist(TDirectoryFile *const &outputDir)
+{
+  outputDir->Add(fPrRes);
+  if (!fFirstRun) outputDir->Add(fPrV2EtaSubEventPlane);
+  outputDir->Write();
 }
