@@ -65,11 +65,19 @@ Double_t GetFHCalPhi(Int_t iModule)
 TChain* initChain(const TString &inputFileName, const char* chainName)
 {
     TChain *chain = new TChain(chainName);
-    std::ifstream file(inputFileName.Data());
-    std::string line;
-    while(std::getline(file, line))
+    if (inputFileName.Contains(".root"))
     {
+      chain->Add(inputFileName.Data());
+    }
+    // if inputFileName contains filelist
+    if (!inputFileName.Contains(".root"))
+    {
+      std::ifstream file(inputFileName.Data());
+      std::string line;
+      while(std::getline(file, line))
+      {
         chain->Add(line.c_str());
+      }
     }
 
     return chain;

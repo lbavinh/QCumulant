@@ -7,42 +7,29 @@
 #include <FlowAnalysisWithQCumulant.h>
 ClassImp(FlowAnalysisWithQCumulant);
 FlowAnalysisWithQCumulant::FlowAnalysisWithQCumulant() :
+  fHarmonic(2),
   fEtaGap(0),
-  pCorrelator2EtaGap(NULL),
-  pCorrelator2(NULL),
-  pCorrelator4(NULL),
-  pCov24(NULL)
+  pCorrelator2EtaGap(nullptr),
+  pCorrelator2(nullptr),
+  pCorrelator4(nullptr),
+  pCov24(nullptr)
 {
-  for (int id = 0; id < npid; id++){
-    pReducedCorrelator2EtaGap[id] = NULL;
-    pReducedCorrelator2[id] = NULL;
-    pReducedCorrelator4[id] = NULL;
-    pCov22Red[id] = NULL;
-    pCov24Red[id] = NULL;
-    pCov42Red[id] = NULL;
-    pCov44Red[id] = NULL;
-    pCov2Red4Red[id] = NULL;
-    pCov22RedEtaGap[id] = NULL;
+  for (Int_t id = 0; id < npid; id++){
+    pReducedCorrelator2EtaGap[id] = nullptr;
+    pReducedCorrelator2[id] = nullptr;
+    pReducedCorrelator4[id] = nullptr;
+    pCov22Red[id] = nullptr;
+    pCov24Red[id] = nullptr;
+    pCov42Red[id] = nullptr;
+    pCov44Red[id] = nullptr;
+    pCov2Red4Red[id] = nullptr;
+    pCov22RedEtaGap[id] = nullptr;
   }
   Zero();
 }
 
 FlowAnalysisWithQCumulant::~FlowAnalysisWithQCumulant()
 {
-  // delete pCorrelator2EtaGap;
-  // delete pCorrelator2;
-  // delete pCorrelator4;
-  // delete [] pReducedCorrelator2EtaGap;
-  // delete [] pReducedCorrelator2;
-  // delete [] pReducedCorrelator4;
-
-  // delete pCov24;
-  // delete [] pCov22Red;
-  // delete [] pCov24Red;
-  // delete [] pCov42Red;
-  // delete [] pCov44Red;
-  // delete [] pCov2Red4Red;
-  // delete [] pCov22RedEtaGap;
 }
 
 void FlowAnalysisWithQCumulant::Init()
@@ -115,7 +102,6 @@ void FlowAnalysisWithQCumulant::Zero()
       wred2[ipt][ipid] = 0.;
       wred4[ipt][ipid] = 0.;
       p2[ipt][ipid] = TComplex(0., 0.);
-      // p4[ipt][ipid] = TComplex(0., 0.);
       q2[ipt][ipid] = TComplex(0., 0.);
       q4[ipt][ipid] = TComplex(0., 0.);
     }
@@ -146,78 +132,78 @@ void FlowAnalysisWithQCumulant::Zero()
   }
 }
 
-void FlowAnalysisWithQCumulant::ProcessFirstTrackLoopRP(const double &eta, const double &phi)
+void FlowAnalysisWithQCumulant::ProcessFirstTrackLoopRP(const Double_t &eta, const Double_t &phi)
 {
-  Double_t cos4phi = TMath::Cos(4. * phi);
-  Double_t sin4phi = TMath::Sin(4. * phi);
-  Double_t cos2phi = TMath::Cos(2. * phi);
-  Double_t sin2phi = TMath::Sin(2. * phi);
+  Double_t cos2nphi = TMath::Cos(2.*fHarmonic*phi);
+  Double_t sin2nphi = TMath::Sin(2.*fHarmonic*phi);
+  Double_t cosnphi = TMath::Cos(fHarmonic*phi);
+  Double_t sinnphi = TMath::Sin(fHarmonic*phi);
 
   // 2,4-QC
-  Qx2 += cos2phi;
-  Qy2 += sin2phi;
-  Qx4 += cos4phi;
-  Qy4 += sin4phi;
+  Qx2 += cosnphi;
+  Qy2 += sinnphi;
+  Qx4 += cos2nphi;
+  Qy4 += sin2nphi;
   M++;
 
   // 2-QC, eta-gapped
   if (eta < -fEtaGap)
   { // Left TPC subevent selection
-    Qx2Gap[0] += cos2phi;
-    Qy2Gap[0] += sin2phi;
+    Qx2Gap[0] += cosnphi;
+    Qy2Gap[0] += sinnphi;
     MGap[0]++;
   }
   if (eta > fEtaGap)
   { // Right TPC subevent selection
-    Qx2Gap[1] += cos2phi;
-    Qy2Gap[1] += sin2phi;
+    Qx2Gap[1] += cosnphi;
+    Qy2Gap[1] += sinnphi;
     MGap[1]++;
   }
 
 }
 
-void FlowAnalysisWithQCumulant::ProcessFirstTrackLoopPOI(const int &ipt, const double &eta, const double &phi, const int &pid, const double &charge)
+void FlowAnalysisWithQCumulant::ProcessFirstTrackLoopPOI(const Int_t &ipt, const Double_t &eta, const Double_t &phi, const Int_t &pid, const Double_t &charge)
 {
-  Double_t cos4phi = TMath::Cos(4. * phi);
-  Double_t sin4phi = TMath::Sin(4. * phi);
-  Double_t cos2phi = TMath::Cos(2. * phi);
-  Double_t sin2phi = TMath::Sin(2. * phi);
+  Double_t cos2nphi = TMath::Cos(2.*fHarmonic*phi);
+  Double_t sin2nphi = TMath::Sin(2.*fHarmonic*phi);
+  Double_t cosnphi = TMath::Cos(fHarmonic*phi);
+  Double_t sinnphi = TMath::Sin(fHarmonic*phi);
 
   // Differential Flow of 2,4-QC
   if (charge > 0)
   {
-    px2[ipt][0] += cos2phi;
-    py2[ipt][0] += sin2phi;
+    px2[ipt][0] += cosnphi;
+    py2[ipt][0] += sinnphi;
     mp[ipt][0]++;
 
-    qx2[ipt][0] += cos2phi;
-    qy2[ipt][0] += sin2phi;
-    qx4[ipt][0] += cos4phi;
-    qy4[ipt][0] += sin4phi;
+    qx2[ipt][0] += cosnphi;
+    qy2[ipt][0] += sinnphi;
+    qx4[ipt][0] += cos2nphi;
+    qy4[ipt][0] += sin2nphi;
     mq[ipt][0]++;
   }
   if (charge < 0)
   {
-    px2[ipt][4] += cos2phi;
-    py2[ipt][4] += sin2phi;
+    px2[ipt][4] += cosnphi;
+    py2[ipt][4] += sinnphi;
     mp[ipt][4]++;
 
-    qx2[ipt][4] += cos2phi;
-    qy2[ipt][4] += sin2phi;
-    qx4[ipt][4] += cos4phi;
-    qy4[ipt][4] += sin4phi;
+    qx2[ipt][4] += cosnphi;
+    qy2[ipt][4] += sinnphi;
+    qx4[ipt][4] += cos2nphi;
+    qy4[ipt][4] += sin2nphi;
     mq[ipt][4]++;
   }
   if (pid > 0)
   {
-    px2[ipt][pid] += cos2phi;
-    py2[ipt][pid] += sin2phi;
+    px2[ipt][pid] += cosnphi;
+    py2[ipt][pid] += sinnphi;
     mp[ipt][pid]++;
 
-    qx2[ipt][pid] += cos2phi;
-    qy2[ipt][pid] += sin2phi;
-    qx4[ipt][pid] += cos4phi;
-    qy4[ipt][pid] += sin4phi;
+    qx2[ipt][pid] += cosnphi;
+    qy2[ipt][pid] += sinnphi;
+    qx4[ipt][pid] += cos2nphi;
+    qy4[ipt][pid] += sin2nphi;
     mq[ipt][pid]++;
   }
 
@@ -226,20 +212,20 @@ void FlowAnalysisWithQCumulant::ProcessFirstTrackLoopPOI(const int &ipt, const d
   { // Left TPC subevent selection
     if (charge > 0)
     { // Inclusive positively charged hadrons
-      px2Gap[1][ipt][0] += cos2phi;
-      py2Gap[1][ipt][0] += sin2phi;
+      px2Gap[1][ipt][0] += cosnphi;
+      py2Gap[1][ipt][0] += sinnphi;
       mpGap[1][ipt][0]++;
     }
     if (charge < 0)
     { // Inclusive negatively charged hadrons
-      px2Gap[1][ipt][4] += cos2phi;
-      py2Gap[1][ipt][4] += sin2phi;
+      px2Gap[1][ipt][4] += cosnphi;
+      py2Gap[1][ipt][4] += sinnphi;
       mpGap[1][ipt][4]++;
     }
     if (pid > 0)
     { // Identified charged hadrons
-      px2Gap[1][ipt][pid] += cos2phi;
-      py2Gap[1][ipt][pid] += sin2phi;
+      px2Gap[1][ipt][pid] += cosnphi;
+      py2Gap[1][ipt][pid] += sinnphi;
       mpGap[1][ipt][pid]++;
     }
   } // end of Left TPC subevent selection
@@ -247,27 +233,27 @@ void FlowAnalysisWithQCumulant::ProcessFirstTrackLoopPOI(const int &ipt, const d
   { // Right TPC subevent selection
     if (charge > 0)
     { // Inclusive positively charged hadrons
-      px2Gap[0][ipt][0] += cos2phi;
-      py2Gap[0][ipt][0] += sin2phi;
+      px2Gap[0][ipt][0] += cosnphi;
+      py2Gap[0][ipt][0] += sinnphi;
       mpGap[0][ipt][0]++;
     }
     if (charge < 0)
     { // Inclusive negatively charged hadrons
-      px2Gap[0][ipt][4] += cos2phi;
-      py2Gap[0][ipt][4] += sin2phi;
+      px2Gap[0][ipt][4] += cosnphi;
+      py2Gap[0][ipt][4] += sinnphi;
       mpGap[0][ipt][4]++;
     }
     if (pid > 0)
     { // Identified charged hadrons
-      px2Gap[0][ipt][pid] += cos2phi;
-      py2Gap[0][ipt][pid] += sin2phi;
+      px2Gap[0][ipt][pid] += cosnphi;
+      py2Gap[0][ipt][pid] += sinnphi;
       mpGap[0][ipt][pid]++;
     }
   } // end of Right TPC subevent selection
 
 }
 
-void FlowAnalysisWithQCumulant::ProcessEventAfterFirstTrackLoop(const int &icent)
+void FlowAnalysisWithQCumulant::ProcessEventAfterFirstTrackLoop(const Int_t &icent)
 {
   // 2,QC & 4,QC without eta-gap
   Q2 = TComplex(Qx2, Qy2);
@@ -370,51 +356,51 @@ TComplex FlowAnalysisWithQCumulant::Qstar(const TComplex &Q)
   return QStar;
 }
 
-double FlowAnalysisWithQCumulant::CalCor22(const TComplex &Q2, const double &M, const double &w2)
+Double_t FlowAnalysisWithQCumulant::CalCor22(const TComplex &Q2, const Double_t &M, const Double_t &w2)
 {
   // single-event average 2-particle azimuthal correlation <2>
-  double Q2Square = Q2.Rho2();
-  double coor22 = Q2Square - M;
+  Double_t Q2Square = Q2.Rho2();
+  Double_t coor22 = Q2Square - M;
   return coor22 / w2;
 }
 
-double FlowAnalysisWithQCumulant::CalCor24(const TComplex &Q2, const TComplex &Q4, const double &M, const double &w4)
+Double_t FlowAnalysisWithQCumulant::CalCor24(const TComplex &Q2, const TComplex &Q4, const Double_t &M, const Double_t &w4)
 {
   // single-event average 4-particle azimuthal correlation <4>
 
   TComplex Q2Star = Qstar(Q2);
   TComplex Q4Star = Qstar(Q4);
 
-  double Q2Square = Q2.Rho2();
-  double Q4Square = Q4.Rho2();
-  double ReQQQ = (Q4 * Q2Star * Q2Star).Re();
+  Double_t Q2Square = Q2.Rho2();
+  Double_t Q4Square = Q4.Rho2();
+  Double_t ReQQQ = (Q4 * Q2Star * Q2Star).Re();
 
-  double coor24 = (Q2Square * Q2Square + Q4Square - 2 * ReQQQ - 4 * (M - 2) * Q2Square + 2 * M * (M - 3));
+  Double_t coor24 = (Q2Square * Q2Square + Q4Square - 2 * ReQQQ - 4 * (M - 2) * Q2Square + 2 * M * (M - 3));
 
   return coor24 / w4;
 }
 
-double FlowAnalysisWithQCumulant::CalRedCor22(const TComplex &Q2, const TComplex &p2, const double &M, const double &mp,
-                                              const double &mq, const double &wred2)
+Double_t FlowAnalysisWithQCumulant::CalRedCor22(const TComplex &Q2, const TComplex &p2, const Double_t &M, const Double_t &mp,
+                                              const Double_t &mq, const Double_t &wred2)
 {
 
   // Calculate the average reduced single-event 2-particle correlations
   TComplex Q2Star = TComplex::Conjugate(Q2);
-  double coor22 = (p2 * Q2Star - mq).Re();
+  Double_t coor22 = (p2 * Q2Star - mq).Re();
 
   return coor22 / wred2;
 }
 
-double FlowAnalysisWithQCumulant::CalRedCor24(const TComplex &Q2, const TComplex &Q4, const TComplex &p2, const TComplex &q2,
-                                              const TComplex &q4, const double &M, const double &mp, const double &mq, const double &wred4)
+Double_t FlowAnalysisWithQCumulant::CalRedCor24(const TComplex &Q2, const TComplex &Q4, const TComplex &p2, const TComplex &q2,
+                                              const TComplex &q4, const Double_t &M, const Double_t &mp, const Double_t &mq, const Double_t &wred4)
 {
 
   // Calculate the average reduced single-event 2-particle correlations
   TComplex Q2Star = TComplex::Conjugate(Q2);
   TComplex Q4Star = TComplex::Conjugate(Q4);
   TComplex q2Star = TComplex::Conjugate(q2);
-  double Q2Square = Q2.Rho2();
+  Double_t Q2Square = Q2.Rho2();
   TComplex coorc = p2 * Q2 * Q2Star * Q2Star - q4 * Q2Star * Q2Star - p2 * Q2 * Q4Star - 2.0 * M * p2 * Q2Star - 2.0 * mq * Q2Square + 7.0 * q2 * Q2Star - Q2 * q2Star + q4 * Q4Star + 2.0 * p2 * Q2Star + 2.0 * mq * M - 6.0 * mq;
-  double coor24 = coorc.Re();
+  Double_t coor24 = coorc.Re();
   return coor24 / wred4;
 }

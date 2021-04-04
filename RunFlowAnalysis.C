@@ -43,8 +43,8 @@ using std::cout;
 using std::cerr;
 using std::endl;
 // Flags for flow methods, where *_1 is the first run over the data and *_2 is the second run (need to move these flags to config file!!)
-Bool_t ETASUBEVENTPLANE_1 = 0;        // Eta-sub EP (first run)
-Bool_t ETASUBEVENTPLANE_2 = 1;        // Eta-sub EP (second run)
+Bool_t ETASUBEVENTPLANE_1 = 1;        // Eta-sub EP (first run)
+Bool_t ETASUBEVENTPLANE_2 = 0;        // Eta-sub EP (second run)
 Bool_t THREEETASUBEVENTPLANE_1 = 0;   // 3 eta-sub method (first run)
 Bool_t THREEETASUBEVENTPLANE_2 = 0;   // 3 eta-sub method (second run)
 Bool_t FHCALEVENTPLANE_1 = 0;         // FHCal EP (w.r.t. 1-st order harmonic) (first run)
@@ -53,13 +53,13 @@ Bool_t LYZ_SUM_1 = 0;                 // Lee-Yang Zeros using sum generating fun
 Bool_t LYZ_SUM_2 = 0;                 // Lee-Yang Zeros using sum generating function (second run)
 Bool_t LYZ_SUM_PRODUCT_1 = 0;         // Lee-Yang Zeros using product generating function (first run) (integrated with sum GF at the moment, will be separated soon)
 Bool_t LYZ_SUM_PRODUCT_2 = 0;         // Lee-Yang Zeros using product generating function (second run) (integrated with sum GF at the moment, will be separated soon)
-Bool_t SCALARPRODUCT_1 = 0;           // Scalar product using eta-sub method (first run)
+Bool_t SCALARPRODUCT_1 = 1;           // Scalar product using eta-sub method (first run)
 Bool_t SCALARPRODUCT_2 = 0;           // Scalar product using eta-sub method (second run)
-Bool_t QCUMULANT = 0;                 // Q-Cumulants: 2- and 4-particle cumulants obtained by both standard and subevent methods 
+Bool_t QCUMULANT = 1;                 // Q-Cumulants: 2- and 4-particle cumulants obtained by both standard and subevent methods 
 Bool_t HIGHORDERQCUMULANT = 0;        // Q-Cumulants: 2- up to 8-particle cumulants using recursive algorithm
 Bool_t LYZEP = 0;                     // one needs to run LYZ_SUM_1 & 2 (or LYZ_SUM_PRODUCT_1 & 2) before set this flag to kTRUE
 Bool_t readMCTracks = 0; // 0 - read reco tracks, 1 - read MC tracks
-Int_t harmonic = 3; // set harmonic for eta-sub event plane and scalar product method
+Int_t harmonic = 3; // set harmonic for eta-sub event plane, Q-Cumulants, and scalar product method
 // Kinetic cuts by default if not using config file
 Double_t maxpt = 3.6;     // max pt for differential flow
 Double_t minpt = 0.;      // min pt for differential flow
@@ -305,6 +305,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   }
   if (QCUMULANT) {
     flowQC = new FlowAnalysisWithQCumulant();
+    flowQC->SetHarmonic(harmonic);
     flowQC->SetEtaGap(eta_gap);
     flowQC->Init();
   }

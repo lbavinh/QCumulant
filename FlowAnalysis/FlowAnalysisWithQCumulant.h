@@ -20,28 +20,29 @@ public:
   virtual ~FlowAnalysisWithQCumulant();
   void Init();
   void Zero(); // Reset variables for new event loop
-  void ProcessFirstTrackLoopRP(const double &eta, const double &phi);
-  void ProcessFirstTrackLoopPOI(const int &ipt, const double &eta, const double &phi, const int &pid, const double &charge);
-  void ProcessEventAfterFirstTrackLoop(const int &icent);
-  void SetEtaGap(double d) { this->fEtaGap = d; }
+  void ProcessFirstTrackLoopRP(const Double_t &eta, const Double_t &phi);
+  void ProcessFirstTrackLoopPOI(const Int_t &ipt, const Double_t &eta, const Double_t &phi, const Int_t &pid, const Double_t &charge);
+  void ProcessEventAfterFirstTrackLoop(const Int_t &icent);
+  void SetHarmonic(Int_t i) { this->fHarmonic = i; }
+  void SetEtaGap(Double_t d) { this->fEtaGap = d; }
   void SaveHist();
 
   TComplex Qstar(const TComplex &Q);
-  double CalCor22(const TComplex &Q2, const double &M, const double &w2);
-  double CalCor24(const TComplex &Q2, const TComplex &Q4, const double &M, const double &w4);
-  double CalRedCor22(const TComplex &Q2, const TComplex &p2, const double &M,
-                     const double &mp, const double &mq, const double &wred2);
-  double CalRedCor24(const TComplex &Q2, const TComplex &Q4, const TComplex &p2, const TComplex &q2,
-                     const TComplex &q4, const double &M, const double &mp, const double &mq, const double &wred4);
+  Double_t CalCor22(const TComplex &Q2, const Double_t &M, const Double_t &w2);
+  Double_t CalCor24(const TComplex &Q2, const TComplex &Q4, const Double_t &M, const Double_t &w4);
+  Double_t CalRedCor22(const TComplex &Q2, const TComplex &p2, const Double_t &M,
+                     const Double_t &mp, const Double_t &mq, const Double_t &wred2);
+  Double_t CalRedCor24(const TComplex &Q2, const TComplex &Q4, const TComplex &p2, const TComplex &q2,
+                     const TComplex &q4, const Double_t &M, const Double_t &mp, const Double_t &mq, const Double_t &wred4);
 
 private:
-  double fEtaGap;
-
+  Int_t fHarmonic;
+  Double_t fEtaGap;
   // 2,QC & 4,QC without eta-gap
   Double_t Qx2, Qy2, Qx4, Qy4;
   TComplex Q2, Q4;
   Double_t px2[npt][npid], py2[npt][npid];
-  TComplex p2[npt][npid], q2[npt][npid], q4[npt][npid]; // , p4[npt][npid]
+  TComplex p2[npt][npid], q2[npt][npid], q4[npt][npid];
   Double_t qx2[npt][npid], qy2[npt][npid], qx4[npt][npid], qy4[npt][npid];
   Double_t M = 0.;
   Double_t mq[npt][npid], mp[npt][npid];
@@ -50,13 +51,6 @@ private:
   Double_t wred2[npt][npid], wred4[npt][npid];
   Double_t cor22, cor24;
   // Int_t icent;
-
-  // QVector fQ2;
-  // QVector fQ4;
-  // QVector fp2[npt][npid];
-  // QVector fq2[npt][npid];
-  // QVector fp4[npt][npid];
-  // QVector fp2[npt][npid];
 
   // 2,QC with eta-gap
   Double_t Qx2Gap[neta], Qy2Gap[neta];
