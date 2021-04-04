@@ -60,6 +60,7 @@ Bool_t HIGHORDERQCUMULANT = 0;        // Q-Cumulants: 2- up to 8-particle cumula
 Bool_t LYZEP = 0;                     // one needs to run LYZ_SUM_1 & 2 (or LYZ_SUM_PRODUCT_1 & 2) before set this flag to kTRUE
 Bool_t readMCTracks = 0; // 0 - read reco tracks, 1 - read MC tracks
 Int_t harmonic = 3; // set harmonic for eta-sub event plane, Q-Cumulants, and scalar product method
+Bool_t bMotherIDcut = 1;
 // Kinetic cuts by default if not using config file
 Double_t maxpt = 3.6;     // max pt for differential flow
 Double_t minpt = 0.;      // min pt for differential flow
@@ -125,6 +126,18 @@ Bool_t trackCut(PicoDstMCTrack *const &mcTrack)
   Double_t charge = 1./3.*particle->Charge();
   if (pt < minpt || pt > maxpt || fabs(eta) > eta_cut || charge == 0) { return false; }
   return true;
+}
+
+Bool_t trackCutMotherID(PicoDstRecoTrack *const &recoTrack, PicoDstMCTrack *const &mcTrack)
+{
+  if (!recoTrack) { return false; }
+  if (!mcTrack) { return false; }
+  if (mcTrack->GetMotherId() != -1) { return false; }
+  Double_t pt = recoTrack->GetPt();
+  Double_t eta = recoTrack->GetEta();
+  if (pt < minpt || pt > maxpt || fabs(eta) > eta_cut)     return false;
+  if (recoTrack->GetNhits() < Nhits_cut)                   return false; // TPC hits cut    
+  return true;                                   
 }
 
 Int_t findBin(Double_t pt)
@@ -392,17 +405,17 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         fId = findId(mcTrack);
       }
       else
-      {
+      { // Read reco tracks
         auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
-        if (!trackCut(recoTrack))
-        {
-          continue;
-        }
+        auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(recoTrack->GetMcId());
+        if (bMotherIDcut) { if (!trackCutMotherID(recoTrack, mcTrack)) { continue; } }
+        else { if (!trackCut(recoTrack)) { continue; } }
         pt = recoTrack->GetPt();
         eta = recoTrack->GetEta();
         phi = recoTrack->GetPhi();
         charge = recoTrack->GetCharge();
-        fId = findId(recoTrack);
+        if (bMotherIDcut) { fId = findId(mcTrack); }
+        else { fId = findId(recoTrack); }
       }
       ipt = findBin(pt);
       if (pt > minptRF && pt < maxptRF)
@@ -440,13 +453,15 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
           if (!trackCut(mcTrack)) { continue; }
         }
         else 
-        {
-          auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk); 
+        { // Read reco tracks
+          auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
+          auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(recoTrack->GetMcId());
           pt = recoTrack->GetPt();
           eta = recoTrack->GetEta();
           phi = recoTrack->GetPhi();
           charge = recoTrack->GetCharge();
-          if (!trackCut(recoTrack)) { continue; }
+          if (bMotherIDcut) { if (!trackCutMotherID(recoTrack, mcTrack)) { continue; } }
+          else { if (!trackCut(recoTrack)) { continue; } }
         }
 
 
