@@ -101,6 +101,25 @@ void readConfig(const TString& _strFileName)
   Nevents = env.GetValue("Nevents", 0);
 
   format = env.GetValue("format", "");
+
+  ETASUBEVENTPLANE_1 = env.GetValue("ETASUBEVENTPLANE_1", 0);
+  ETASUBEVENTPLANE_2 = env.GetValue("ETASUBEVENTPLANE_2", 0);
+  THREEETASUBEVENTPLANE_1 = env.GetValue("THREEETASUBEVENTPLANE_1", 0);
+  THREEETASUBEVENTPLANE_2 = env.GetValue("THREEETASUBEVENTPLANE_2", 0);
+  FHCALEVENTPLANE_1 = env.GetValue("FHCALEVENTPLANE_1", 0);
+  FHCALEVENTPLANE_2 = env.GetValue("FHCALEVENTPLANE_2", 0);
+  LYZ_SUM_1 = env.GetValue("LYZ_SUM_1", 0);
+  LYZ_SUM_2 = env.GetValue("LYZ_SUM_2", 0);
+  LYZ_SUM_PRODUCT_1 = env.GetValue("LYZ_SUM_PRODUCT_1", 0);
+  LYZ_SUM_PRODUCT_2 = env.GetValue("LYZ_SUM_PRODUCT_2", 0);
+  SCALARPRODUCT_1 = env.GetValue("SCALARPRODUCT_1", 0);
+  SCALARPRODUCT_2 = env.GetValue("SCALARPRODUCT_2", 0);
+  QCUMULANT = env.GetValue("QCUMULANT", 0);
+  HIGHORDERQCUMULANT = env.GetValue("HIGHORDERQCUMULANT", 0);
+  readMCTracks = env.GetValue("readMCTracks", 0);
+  harmonic = env.GetValue("harmonic", 0);
+  bMotherIDcut = env.GetValue("bMotherIDcut", 0);
+
 }
 
 Bool_t trackCut(PicoDstRecoTrack *const &recoTrack)
@@ -189,6 +208,28 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     cout << "DCAcut = " << DCAcut << endl;
     cout << "pid_probability = " << pid_probability << endl;
     cout << "format = " << format << endl;
+
+    cout << "ETASUBEVENTPLANE_1 = " << ETASUBEVENTPLANE_1 << endl;
+    cout << "ETASUBEVENTPLANE_2 = " << ETASUBEVENTPLANE_2 << endl;
+    cout << "THREEETASUBEVENTPLANE_1 = " << THREEETASUBEVENTPLANE_1 << endl;
+    cout << "THREEETASUBEVENTPLANE_2 = " << THREEETASUBEVENTPLANE_2 << endl;
+    cout << "FHCALEVENTPLANE_1 = " << FHCALEVENTPLANE_1 << endl;
+    cout << "FHCALEVENTPLANE_2 = " << FHCALEVENTPLANE_2 << endl;
+    cout << "LYZ_SUM_1 = " << LYZ_SUM_1 << endl;
+    cout << "LYZ_SUM_2 = " << LYZ_SUM_2 << endl;
+    cout << "LYZ_SUM_PRODUCT_1 = " << LYZ_SUM_PRODUCT_1 << endl;
+    cout << "LYZ_SUM_PRODUCT_2 = " << LYZ_SUM_PRODUCT_2 << endl;
+    cout << "SCALARPRODUCT_1 = " << SCALARPRODUCT_1 << endl;
+    cout << "SCALARPRODUCT_2 = " << SCALARPRODUCT_2 << endl;
+    cout << "QCUMULANT = " << QCUMULANT << endl;
+    cout << "HIGHORDERQCUMULANT = " << HIGHORDERQCUMULANT << endl;
+    cout << "LYZEP = " << LYZEP << endl;
+    cout << "readMCTracks = " << readMCTracks << endl;
+    cout << "harmonic = " << harmonic << endl;       
+    cout << "bMotherIDcut = " << bMotherIDcut << endl;
+    cout << "readMCTracks = " << readMCTracks << endl;
+    cout << "harmonic = " << harmonic << endl;
+    cout << "bMotherIDcut = " << bMotherIDcut << endl;
   }
 
   if ((LYZ_SUM_1 && LYZ_SUM_PRODUCT_1) || (LYZ_SUM_2 && LYZ_SUM_PRODUCT_2))
