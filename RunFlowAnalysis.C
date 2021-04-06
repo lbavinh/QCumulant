@@ -167,19 +167,25 @@ Int_t findBin(Double_t pt)
   return ipt;
 }
 
-Int_t findId(PicoDstRecoTrack *recoTrack)
+Int_t findId(const PicoDstRecoTrack *const &recoTrack)
 {
   Int_t fId = -1;
 
   Double_t charge = recoTrack->GetCharge();
   if (recoTrack->GetTofFlag() != 0 && recoTrack->GetTofFlag() != 4)
   {
-    if (recoTrack->GetPidProbPion() > pid_probability && charge > 0)   fId = 1; // pion+
-    if (recoTrack->GetPidProbKaon() > pid_probability && charge > 0)   fId = 2; // kaon+
-    if (recoTrack->GetPidProbProton() > pid_probability && charge > 0) fId = 3; // proton
-    if (recoTrack->GetPidProbPion() > pid_probability && charge < 0)   fId = 5; // pion-
-    if (recoTrack->GetPidProbKaon() > pid_probability && charge < 0)   fId = 6; // kaon-
-    if (recoTrack->GetPidProbProton() > pid_probability && charge < 0) fId = 7; // antiproton
+    if (charge > 0)                                                    fId = 0;  // hadron+
+    if (recoTrack->GetPidProbPion() > pid_probability && charge > 0)   fId = 1;  // pion+
+    if (recoTrack->GetPidProbKaon() > pid_probability && charge > 0)   fId = 2;  // kaon+
+    if (recoTrack->GetPidProbProton() > pid_probability && charge > 0) fId = 3;  // proton
+    if (charge < 0)                                                    fId = 4;  // hadron-
+    if (recoTrack->GetPidProbPion() > pid_probability && charge < 0)   fId = 5;  // pion-
+    if (recoTrack->GetPidProbKaon() > pid_probability && charge < 0)   fId = 6;  // kaon-
+    if (recoTrack->GetPidProbProton() > pid_probability && charge < 0) fId = 7;  // antiproton
+    if (charge != 0)                                                   fId = 8;  // hadron-
+    if (recoTrack->GetPidProbPion() > pid_probability)                 fId = 9;  // pion
+    if (recoTrack->GetPidProbKaon() > pid_probability)                 fId = 10; // kaon
+    if (recoTrack->GetPidProbProton() > pid_probability)               fId = 11; // proton and antiproton
   }
 
   return fId;
@@ -267,12 +273,12 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   
   FlowAnalysisWithEtaSubEventPlane  *flowEtaSub  = nullptr; // Eta-sub Event Plane
   FlowAnalysisWithThreeEtaSubEventPlane *flowThreeEtaSub = nullptr; // 3-Eta-sub Event Plane
-  FlowAnalysisWithFHCalEventPlane   *flowFHCalEP = nullptr; // FHCal Event Plane
-  FlowAnalysisWithLeeYangZeros      *flowLYZ     = nullptr; // Lee Yang Zeros
+  FlowAnalysisWithFHCalEventPlane   *flowFHCalEP = nullptr; // FHCal Event Plane w.r.t 1-st harmonic
+  FlowAnalysisWithLeeYangZeros      *flowLYZ     = nullptr; // Lee-Yang Zeros
   FlowAnalysisWithScalarProduct     *flowSP      = nullptr; // Scalar Product
   FlowAnalysisWithQCumulant         *flowQC      = nullptr; // Q-Cumulant
-  FlowAnalysisWithHighOrderQCumulant *flowHighQC = nullptr;
-  FlowAnalysisWithLeeYangZerosEventPlane *flowLYZEP = nullptr;
+  FlowAnalysisWithHighOrderQCumulant *flowHighQC = nullptr; // 2- to 8-particle correlations using recursive algorithm
+  FlowAnalysisWithLeeYangZerosEventPlane *flowLYZEP = nullptr; // Lee-Yang Zeros Event Plane
 
   if (ETASUBEVENTPLANE_1) {
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
@@ -385,7 +391,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowLYZEP->SetInputFileFromFirstAndSecondRun("FirstRun.root", "SecondRun.root");
     flowLYZEP->Init();
   }
-  Int_t icent, reco_mult, ipt, fId;
+  Int_t icent, mult, ipt, fId;
   Double_t bimp, cent, pt, eta, phi, charge, energy;
   Long64_t chain_size = chain->GetEntries();
   Long64_t n_entries = (Nevents < chain_size && Nevents > 0) ? Nevents : chain_size;
@@ -404,8 +410,8 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
       continue;
     icent = GetCentBin(cent);
     
-    if (readMCTracks) reco_mult = reader->GetMcTrackSize();
-    else reco_mult = reader->GetRecoTrackSize();
+    if (readMCTracks) mult = reader->GetMcTrackSize();
+    else mult = reader->GetRecoTrackSize();
 
     if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->Zero();
     if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->Zero();
@@ -431,7 +437,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
       }
     }
     
-    for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
+    for (Int_t iTrk = 0; iTrk < mult; iTrk++)
     { // Track loop
       if (readMCTracks)
       {
@@ -489,7 +495,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     if (LYZEP) flowLYZEP->ProcessEventAfterFirstTrackLoop(Q2, icent);
     if (ETASUBEVENTPLANE_2 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_2 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_2 || SCALARPRODUCT_2 || LYZEP)
     {
-      for (Int_t iTrk = 0; iTrk < reco_mult; iTrk++)
+      for (Int_t iTrk = 0; iTrk < mult; iTrk++)
       { // 2nd Track loop
         if (readMCTracks)
         {
