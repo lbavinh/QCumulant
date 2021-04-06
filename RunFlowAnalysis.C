@@ -26,6 +26,7 @@
 
 #include <IReader.h>
 #include <PicoDstReader.h>
+#include <McPicoReader.h>
 // Flow method headers
 #include <QVector.h>
 #include <FlowAnalysisWithEtaSubEventPlane.h>
@@ -247,6 +248,11 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (format == "picodst")
   {
     reader = new PicoDstReader();
+  }
+  if (format == "mctree")
+  {
+    reader = new McPicoReader();
+    readMCTracks = true;
   }
   if (!reader)
   {

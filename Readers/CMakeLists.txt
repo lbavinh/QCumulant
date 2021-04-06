@@ -15,11 +15,13 @@ set(READERS_INCLUDE_LIBRARIES
 set(Readers_h_files
   "${CMAKE_CURRENT_SOURCE_DIR}/IReader.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/PicoDstReader.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/McPicoReader.h"
 )
 
 set(Readers_cxx_files
   "${CMAKE_CURRENT_SOURCE_DIR}/IReader.cxx"
   "${CMAKE_CURRENT_SOURCE_DIR}/PicoDstReader.cxx"
+  "${CMAKE_CURRENT_SOURCE_DIR}/McPicoReader.cxx"
 )
 
 set(Readers_LinkDef
