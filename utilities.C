@@ -87,20 +87,12 @@ Int_t findId(const PicoDstMCTrack *const &mcTrack)
 {
   Int_t fId = -1;
   Int_t pdg = mcTrack->GetPdg();
-  auto particle = (TParticlePDG*) TDatabasePDG::Instance()->GetParticle(pdg);
-  Double_t charge = 1./3.*particle->Charge();
-  if (charge > 0)                   fId = 0;  // hadron+
   if (pdg == 211)                   fId = 1;  // pion+
   if (pdg == 321)                   fId = 2;  // kaon+
   if (pdg == 2212)                  fId = 3;  // proton
-  if (charge < 0)                   fId = 4;  // hadron-
   if (pdg == -211)                  fId = 5;  // pion-
   if (pdg == -321)                  fId = 6;  // kaon-
   if (pdg == -2212)                 fId = 7;  // anti-proton
-  if (charge != 0)                  fId = 8;  // hadron+-
-  if (pdg == -211  || pdg == 211)   fId = 9;  // pion+-
-  if (pdg == -321  || pdg == 321)   fId = 10; // kaon+-
-  if (pdg == -2212 || pdg == 2212)  fId = 11; // proton and antiproton
 
   return fId;
 }

@@ -7,6 +7,7 @@
 #include <TH2F.h>
 #include <TH1.h>
 #include <TProfile.h>
+#include <TProfile2D.h>
 #include <TProfile3D.h>
 #include <TDatabasePDG.h>
 #include <TString.h>
@@ -27,7 +28,7 @@ public:
   void Zero(); // Reset variables for new event loop
   void ProcessFirstTrackLoop(const Double_t &eta, const Double_t &phi, const Double_t &pt);
   void ProcessEventAfterFirstTrackLoop(const Double_t &dCent);
-  void ProcessSecondTrackLoop(const Double_t &eta, const Double_t &phi, const Double_t &pt, const Double_t &dCent);
+  void ProcessSecondTrackLoop(const Double_t &eta, const Double_t &phi, const Double_t &pt, const Double_t &dCent, const Int_t &pid, const Double_t &charge);
   void SetFirstRun(Bool_t kt) { this->fFirstRun = kt; }
   void SetDebugFlag(Bool_t kt) { this->fDebug = kt; }
   void SetHarmonic(Int_t i) { this->fHarmonic = i; }
@@ -49,6 +50,8 @@ private:
   Double_t fRes2[ncent];
   TString fstrInputFileFromFirstRun;
   TProfile *fPrRes;
+  TProfile2D *fPrV2vsPt[npid];
+  TProfile2D *fPrV2vsEta;
   TProfile3D *fPrV2EtaSubEventPlane;
   ClassDef(FlowAnalysisWithEtaSubEventPlane,0);
 

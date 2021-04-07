@@ -16,7 +16,7 @@ FlowAnalysisWithQCumulant::FlowAnalysisWithQCumulant() :
   pCorrelator4EtaGap(nullptr),
   pCov24EtaGap(nullptr)  
 {
-  for (Int_t id = 0; id < npid; id++){
+  for (Int_t id = 0; id < npidQC; id++){
     pReducedCorrelator2[id] = nullptr;
     pReducedCorrelator4[id] = nullptr;
     pCov22Red[id] = nullptr;
@@ -55,7 +55,7 @@ void FlowAnalysisWithQCumulant::Init()
   pCov24->Sumw2();
   pCov24EtaGap = new TProfile("pCov24EtaGap", "Covariance(<2>,<4>) 2-sub method", ncent, 0, ncent); // <2>*<4>
   pCov24EtaGap->Sumw2();
-  for (Int_t i = 0; i < npid; i++)
+  for (Int_t i = 0; i < npidQC; i++)
   {
     pReducedCorrelator2[i] = new TProfile2D(Form("pReducedCorrelator2_pid%i", i), Form("Reduced 2nd order correlator of %s", pidNames.at(i).Data()), npt, 0, npt, ncent, 0, ncent);
     pReducedCorrelator2[i]->Sumw2();
@@ -104,7 +104,7 @@ void FlowAnalysisWithQCumulant::Zero()
   cor24 = 0.;
   for (Int_t ipt = 0; ipt < npt; ipt++)
   {
-    for (Int_t ipid = 0; ipid < npid; ipid++)
+    for (Int_t ipid = 0; ipid < npidQC; ipid++)
     {
       p2x[ipt][ipid] = 0.;
       p2y[ipt][ipid] = 0.;
@@ -142,7 +142,7 @@ void FlowAnalysisWithQCumulant::Zero()
     Q4Gap[ieta] = TComplex(0., 0.);
     for (Int_t ipt = 0; ipt < npt; ipt++)
     {
-      for (Int_t ipid = 0; ipid < npid; ipid++)
+      for (Int_t ipid = 0; ipid < npidQC; ipid++)
       {
         p2xGap[ieta][ipt][ipid] = 0;
         p2yGap[ieta][ipt][ipid] = 0;
@@ -206,7 +206,31 @@ void FlowAnalysisWithQCumulant::ProcessFirstTrackLoopPOI(const Int_t &ipt, const
   Double_t sinnphi = TMath::Sin(fHarmonic*phi);
 
   // Differential Flow of 2,4-QC
-  if (pid > -1)
+  if (charge > 0)
+  {
+    p2x[ipt][0] += cosnphi;
+    p2y[ipt][0] += sinnphi;
+    mp[ipt][0]++;
+
+    q2x[ipt][0] += cosnphi;
+    q2y[ipt][0] += sinnphi;
+    q4x[ipt][0] += cos2nphi;
+    q4y[ipt][0] += sin2nphi;
+    mq[ipt][0]++;
+  }
+  if (charge < 0)
+  {
+    p2x[ipt][4] += cosnphi;
+    p2y[ipt][4] += sinnphi;
+    mp[ipt][4]++;
+
+    q2x[ipt][4] += cosnphi;
+    q2y[ipt][4] += sinnphi;
+    q4x[ipt][4] += cos2nphi;
+    q4y[ipt][4] += sin2nphi;
+    mq[ipt][4]++;
+  }
+  if (pid > 0)
   {
     p2x[ipt][pid] += cosnphi;
     p2y[ipt][pid] += sinnphi;
@@ -218,36 +242,81 @@ void FlowAnalysisWithQCumulant::ProcessFirstTrackLoopPOI(const Int_t &ipt, const
     q4y[ipt][pid] += sin2nphi;
     mq[ipt][pid]++;
   }
-  else
-  { 
-    cout << "In FlowAnalysisWithQCumulant::ProcessFirstTrackLoopPOI(), pid = -1" << endl; 
-    return;
-  }
 
   // Differential Flow of 2-QC, 2-sub
   // Note: Here, I reverse index of sub-event in order to correlate Particle of Interest in one half hemisphere
   // with Reference Particles in the other one.
   if (eta < -fEtaGap)
   { // Left TPC subevent selection
-    p2xGap[1][ipt][pid] += cosnphi;
-    p2yGap[1][ipt][pid] += sinnphi;
-    mpGap[1][ipt][pid]++;
-    q2xGap[1][ipt][pid] += cosnphi;
-    q2yGap[1][ipt][pid] += sinnphi;
-    q4xGap[1][ipt][pid] += cos2nphi;
-    q4yGap[1][ipt][pid] += sin2nphi;
-    mqGap[1][ipt][pid]++;
+    if (charge > 0)
+    { // Inclusive positively charged hadrons
+      p2xGap[1][ipt][0] += cosnphi;
+      p2yGap[1][ipt][0] += sinnphi;
+      mpGap[1][ipt][0]++;
+      q2xGap[1][ipt][0] += cosnphi;
+      q2yGap[1][ipt][0] += sinnphi;
+      q4xGap[1][ipt][0] += cos2nphi;
+      q4yGap[1][ipt][0] += sin2nphi;
+      mqGap[1][ipt][0]++;
+    }
+    if (charge < 0)
+    { // Inclusive negatively charged hadrons
+      p2xGap[1][ipt][4] += cosnphi;
+      p2yGap[1][ipt][4] += sinnphi;
+      mpGap[1][ipt][4]++;
+      q2xGap[1][ipt][4] += cosnphi;
+      q2yGap[1][ipt][4] += sinnphi;
+      q4xGap[1][ipt][4] += cos2nphi;
+      q4yGap[1][ipt][4] += sin2nphi;
+      mqGap[1][ipt][4]++;
+    }
+    if (pid > 0)
+    { // Identified charged hadrons
+      p2xGap[1][ipt][pid] += cosnphi;
+      p2yGap[1][ipt][pid] += sinnphi;
+      mpGap[1][ipt][pid]++;
+      q2xGap[1][ipt][pid] += cosnphi;
+      q2yGap[1][ipt][pid] += sinnphi;
+      q4xGap[1][ipt][pid] += cos2nphi;
+      q4yGap[1][ipt][pid] += sin2nphi;
+      mqGap[1][ipt][pid]++;      
+    }
   } // end of Left TPC subevent selection
   if (eta > fEtaGap)
   { // Right TPC subevent selection
-    p2xGap[0][ipt][pid] += cosnphi;
-    p2yGap[0][ipt][pid] += sinnphi;
-    mpGap[0][ipt][pid]++;
-    q2xGap[0][ipt][pid] += cosnphi;
-    q2yGap[0][ipt][pid] += sinnphi;
-    q4xGap[0][ipt][pid] += cos2nphi;
-    q4yGap[0][ipt][pid] += sin2nphi;
-    mqGap[0][ipt][pid]++;
+    if (charge > 0)
+    { // Inclusive positively charged hadrons
+      p2xGap[0][ipt][0] += cosnphi;
+      p2yGap[0][ipt][0] += sinnphi;
+      mpGap[0][ipt][0]++;
+      q2xGap[0][ipt][0] += cosnphi;
+      q2yGap[0][ipt][0] += sinnphi;
+      q4xGap[0][ipt][0] += cos2nphi;
+      q4yGap[0][ipt][0] += sin2nphi;
+      mqGap[0][ipt][0]++;
+    }
+    if (charge < 0)
+    { // Inclusive negatively charged hadrons
+      p2xGap[0][ipt][4] += cosnphi;
+      p2yGap[0][ipt][4] += sinnphi;
+      mpGap[0][ipt][4]++;
+      q2xGap[0][ipt][4] += cosnphi;
+      q2yGap[0][ipt][4] += sinnphi;
+      q4xGap[0][ipt][4] += cos2nphi;
+      q4yGap[0][ipt][4] += sin2nphi;
+      mqGap[0][ipt][4]++;
+    }
+    if (pid > 0)
+    { // Identified charged hadrons
+      p2xGap[0][ipt][pid] += cosnphi;
+      p2yGap[0][ipt][pid] += sinnphi;
+      mpGap[0][ipt][pid]++;
+      q2xGap[0][ipt][pid] += cosnphi;
+      q2yGap[0][ipt][pid] += sinnphi;
+      q4xGap[0][ipt][pid] += cos2nphi;
+      q4yGap[0][ipt][pid] += sin2nphi;
+      mqGap[0][ipt][pid]++;
+    }
   } // end of Right TPC subevent selection
 }
 
@@ -268,7 +337,7 @@ void FlowAnalysisWithQCumulant::ProcessEventAfterFirstTrackLoop(const Int_t &ice
     pCov24->Fill(0.5 + icent, cor22 * cor24, w2 * w4); // <2>*<4>
     for (Int_t ipt = 0; ipt < npt; ipt++)
     {
-      for (Int_t id = 0; id < npid; id++)
+      for (Int_t id = 0; id < npidQC; id++)
       {
         wred2[ipt][id] = mp[ipt][id] * M - mq[ipt][id];                           // w(<2'>)
         wred4[ipt][id] = (mp[ipt][id] * M - 3 * mq[ipt][id]) * (M - 1) * (M - 2); // w(<4'>)
@@ -310,7 +379,7 @@ void FlowAnalysisWithQCumulant::ProcessEventAfterFirstTrackLoop(const Int_t &ice
     {
       for (Int_t ipt = 0; ipt < npt; ipt++)
       { // <2'>
-        for (Int_t id = 0; id < npid; id++)
+        for (Int_t id = 0; id < npidQC; id++)
         {
           if (mpGap[ieta][ipt][id] == 0)
             continue;
@@ -355,7 +424,7 @@ void FlowAnalysisWithQCumulant::SaveHist()
   pCorrelator4EtaGap->Write();
   pCov24->Write();
   pCov24EtaGap->Write();
-  for (Int_t id = 0; id < npid; id++)
+  for (Int_t id = 0; id < npidQC; id++)
   {
     pReducedCorrelator2[id]->Write();
     pReducedCorrelator4[id]->Write();
@@ -374,6 +443,34 @@ void FlowAnalysisWithQCumulant::SaveHist()
   }
 }
 
+void FlowAnalysisWithQCumulant::SaveHist(TDirectoryFile *const &outputDir)
+{
+  
+  outputDir->Add(pCorrelator2);
+  outputDir->Add(pCorrelator4);
+  outputDir->Add(pCorrelator2EtaGap);
+  outputDir->Add(pCorrelator4EtaGap);
+  outputDir->Add(pCov24);
+  outputDir->Add(pCov24EtaGap);
+  for (Int_t id = 0; id < npidQC; id++)
+  {
+    outputDir->Add(pReducedCorrelator2[id]);
+    outputDir->Add(pReducedCorrelator4[id]);
+    outputDir->Add(pCov22Red[id]);
+    outputDir->Add(pCov24Red[id]);
+    outputDir->Add(pCov42Red[id]);
+    outputDir->Add(pCov44Red[id]);
+    outputDir->Add(pCov2Red4Red[id]);
+    outputDir->Add(pReducedCorrelator2EtaGap[id]);
+    outputDir->Add(pReducedCorrelator4EtaGap[id]);
+    outputDir->Add(pCov22RedEtaGap[id]);
+    outputDir->Add(pCov24RedEtaGap[id]);
+    outputDir->Add(pCov42RedEtaGap[id]);
+    outputDir->Add(pCov44RedEtaGap[id]);
+    outputDir->Add(pCov2Red4RedEtaGap[id]);
+  }
+  outputDir->Write();
+}
 TComplex FlowAnalysisWithQCumulant::Qstar(const TComplex &Q)
 {
   TComplex QStar = TComplex::Conjugate(Q);

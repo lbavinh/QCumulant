@@ -7,13 +7,7 @@
 #include <TFile.h>
 #include <TDirectoryFile.h>
 #include <TMath.h>
-#include <TClonesArray.h>
-#include <TH2F.h>
-#include <TH1.h>
-#include <TProfile.h>
-#include <TProfile2D.h>
 #include <TDatabasePDG.h>
-#include <TComplex.h>
 #include <TString.h>
 #include <TEnv.h>
 
@@ -52,13 +46,13 @@ Bool_t FHCALEVENTPLANE_1 = 0;         // FHCal EP (w.r.t. 1-st order harmonic) (
 Bool_t FHCALEVENTPLANE_2 = 0;         // FHCal EP (w.r.t. 1-st order harmonic) (second run)
 Bool_t LYZ_SUM_1 = 0;                 // Lee-Yang Zeros using sum generating function (first run)
 Bool_t LYZ_SUM_2 = 0;                 // Lee-Yang Zeros using sum generating function (second run)
-Bool_t LYZ_SUM_PRODUCT_1 = 0;         // Lee-Yang Zeros using product generating function (first run) (integrated with sum GF at the moment, will be separated soon)
-Bool_t LYZ_SUM_PRODUCT_2 = 0;         // Lee-Yang Zeros using product generating function (second run) (integrated with sum GF at the moment, will be separated soon)
+Bool_t LYZ_PRODUCT_1 = 0;         // Lee-Yang Zeros using product generating function (first run) (integrated with sum GF at the moment, will be separated soon)
+Bool_t LYZ_PRODUCT_2 = 0;         // Lee-Yang Zeros using product generating function (second run) (integrated with sum GF at the moment, will be separated soon)
 Bool_t SCALARPRODUCT_1 = 1;           // Scalar product using eta-sub method (first run)
 Bool_t SCALARPRODUCT_2 = 0;           // Scalar product using eta-sub method (second run)
 Bool_t QCUMULANT = 1;                 // Q-Cumulants: 2- and 4-particle cumulants obtained by both standard and subevent methods 
 Bool_t HIGHORDERQCUMULANT = 0;        // Q-Cumulants: 2- up to 8-particle cumulants using recursive algorithm
-Bool_t LYZEP = 0;                     // one needs to run LYZ_SUM_1 & 2 (or LYZ_SUM_PRODUCT_1 & 2) before set this flag to kTRUE
+Bool_t LYZEP = 0;                     // one needs to run LYZ_SUM_1 & 2 before set this flag to kTRUE
 Bool_t readMCTracks = 0; // 0 - read reco tracks, 1 - read MC tracks
 Int_t harmonic = 3; // set harmonic for eta-sub event plane, Q-Cumulants, and scalar product method
 Bool_t bMotherIDcut = 1;
@@ -111,8 +105,8 @@ void readConfig(const TString& _strFileName)
   FHCALEVENTPLANE_2 = env.GetValue("FHCALEVENTPLANE_2", 0);
   LYZ_SUM_1 = env.GetValue("LYZ_SUM_1", 0);
   LYZ_SUM_2 = env.GetValue("LYZ_SUM_2", 0);
-  LYZ_SUM_PRODUCT_1 = env.GetValue("LYZ_SUM_PRODUCT_1", 0);
-  LYZ_SUM_PRODUCT_2 = env.GetValue("LYZ_SUM_PRODUCT_2", 0);
+  LYZ_PRODUCT_1 = env.GetValue("LYZ_PRODUCT_1", 0);
+  LYZ_PRODUCT_2 = env.GetValue("LYZ_PRODUCT_2", 0);
   SCALARPRODUCT_1 = env.GetValue("SCALARPRODUCT_1", 0);
   SCALARPRODUCT_2 = env.GetValue("SCALARPRODUCT_2", 0);
   QCUMULANT = env.GetValue("QCUMULANT", 0);
@@ -174,18 +168,12 @@ Int_t findId(const PicoDstRecoTrack *const &recoTrack)
   Double_t charge = recoTrack->GetCharge();
   if (recoTrack->GetTofFlag() != 0 && recoTrack->GetTofFlag() != 4)
   {
-    if (charge > 0)                                                    fId = 0;  // hadron+
     if (recoTrack->GetPidProbPion() > pid_probability && charge > 0)   fId = 1;  // pion+
     if (recoTrack->GetPidProbKaon() > pid_probability && charge > 0)   fId = 2;  // kaon+
     if (recoTrack->GetPidProbProton() > pid_probability && charge > 0) fId = 3;  // proton
-    if (charge < 0)                                                    fId = 4;  // hadron-
     if (recoTrack->GetPidProbPion() > pid_probability && charge < 0)   fId = 5;  // pion-
     if (recoTrack->GetPidProbKaon() > pid_probability && charge < 0)   fId = 6;  // kaon-
     if (recoTrack->GetPidProbProton() > pid_probability && charge < 0) fId = 7;  // antiproton
-    if (charge != 0)                                                   fId = 8;  // hadron-
-    if (recoTrack->GetPidProbPion() > pid_probability)                 fId = 9;  // pion
-    if (recoTrack->GetPidProbKaon() > pid_probability)                 fId = 10; // kaon
-    if (recoTrack->GetPidProbProton() > pid_probability)               fId = 11; // proton and antiproton
   }
 
   return fId;
@@ -224,8 +212,8 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     cout << "FHCALEVENTPLANE_2 = " << FHCALEVENTPLANE_2 << endl;
     cout << "LYZ_SUM_1 = " << LYZ_SUM_1 << endl;
     cout << "LYZ_SUM_2 = " << LYZ_SUM_2 << endl;
-    cout << "LYZ_SUM_PRODUCT_1 = " << LYZ_SUM_PRODUCT_1 << endl;
-    cout << "LYZ_SUM_PRODUCT_2 = " << LYZ_SUM_PRODUCT_2 << endl;
+    cout << "LYZ_PRODUCT_1 = " << LYZ_PRODUCT_1 << endl;
+    cout << "LYZ_PRODUCT_2 = " << LYZ_PRODUCT_2 << endl;
     cout << "SCALARPRODUCT_1 = " << SCALARPRODUCT_1 << endl;
     cout << "SCALARPRODUCT_2 = " << SCALARPRODUCT_2 << endl;
     cout << "QCUMULANT = " << QCUMULANT << endl;
@@ -237,12 +225,6 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     cout << "readMCTracks = " << readMCTracks << endl;
     cout << "harmonic = " << harmonic << endl;
     cout << "bMotherIDcut = " << bMotherIDcut << endl;
-  }
-
-  if ((LYZ_SUM_1 && LYZ_SUM_PRODUCT_1) || (LYZ_SUM_2 && LYZ_SUM_PRODUCT_2))
-  {
-    cerr << "Both LYZ_SUM_1(2) and LYZ_SUM_PRODUCT_1(2) are TRUE. Set one of them to FASLE to run flow analysis." << endl;
-    return;
   }
 
   // Configure input information
@@ -271,14 +253,15 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   // Configure output information
   TFile *fo = new TFile(outputFileName.Data(), "recreate");
   
-  FlowAnalysisWithEtaSubEventPlane  *flowEtaSub  = nullptr; // Eta-sub Event Plane
-  FlowAnalysisWithThreeEtaSubEventPlane *flowThreeEtaSub = nullptr; // 3-Eta-sub Event Plane
-  FlowAnalysisWithFHCalEventPlane   *flowFHCalEP = nullptr; // FHCal Event Plane w.r.t 1-st harmonic
-  FlowAnalysisWithLeeYangZeros      *flowLYZ     = nullptr; // Lee-Yang Zeros
-  FlowAnalysisWithScalarProduct     *flowSP      = nullptr; // Scalar Product
-  FlowAnalysisWithQCumulant         *flowQC      = nullptr; // Q-Cumulant
-  FlowAnalysisWithHighOrderQCumulant *flowHighQC = nullptr; // 2- to 8-particle correlations using recursive algorithm
-  FlowAnalysisWithLeeYangZerosEventPlane *flowLYZEP = nullptr; // Lee-Yang Zeros Event Plane
+  FlowAnalysisWithEtaSubEventPlane       *flowEtaSub      = nullptr; // Eta-sub Event Plane
+  FlowAnalysisWithThreeEtaSubEventPlane  *flowThreeEtaSub = nullptr; // 3-Eta-sub Event Plane
+  FlowAnalysisWithFHCalEventPlane        *flowFHCalEP     = nullptr; // FHCal Event Plane w.r.t 1-st harmonic
+  FlowAnalysisWithLeeYangZeros           *flowLYZSUM      = nullptr; // Lee-Yang Zeros using sum generating function
+  FlowAnalysisWithLeeYangZeros           *flowLYZPROD     = nullptr; // Lee-Yang Zeros using product generating function
+  FlowAnalysisWithScalarProduct          *flowSP          = nullptr; // Scalar Product
+  FlowAnalysisWithQCumulant              *flowQC          = nullptr; // Q-Cumulant
+  FlowAnalysisWithHighOrderQCumulant     *flowHighQC      = nullptr; // 2- to 8-particle correlations using recursive algorithm
+  FlowAnalysisWithLeeYangZerosEventPlane *flowLYZEP       = nullptr; // Lee-Yang Zeros Event Plane
 
   if (ETASUBEVENTPLANE_1) {
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
@@ -299,12 +282,14 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (THREEETASUBEVENTPLANE_1) {
     flowThreeEtaSub = new FlowAnalysisWithThreeEtaSubEventPlane();
     flowThreeEtaSub->SetFirstRun(true);
+    flowThreeEtaSub->SetHarmonic(harmonic);
     flowThreeEtaSub->SetEtaGap(eta_gap);
     flowThreeEtaSub->Init();
   }
   if (THREEETASUBEVENTPLANE_2) {
     flowThreeEtaSub = new FlowAnalysisWithThreeEtaSubEventPlane();
     flowThreeEtaSub->SetFirstRun(false);
+    flowThreeEtaSub->SetHarmonic(harmonic);
     flowThreeEtaSub->SetEtaGap(eta_gap);
     flowThreeEtaSub->SetDebugFlag(debug);
     flowThreeEtaSub->SetInputFileFromFirstRun("FirstRun.root");
@@ -326,34 +311,36 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   }
 
   if (LYZ_SUM_1) {
-    flowLYZ = new FlowAnalysisWithLeeYangZeros();
-    flowLYZ->SetFirstRun(true);
-    flowLYZ->Init();
+    flowLYZSUM = new FlowAnalysisWithLeeYangZeros();
+    flowLYZSUM->SetDebugFlag(debug);
+    flowLYZSUM->SetUseProduct(false);
+    flowLYZSUM->SetFirstRun(true);
+    flowLYZSUM->Init();
   }
   if (LYZ_SUM_2) {
-    flowLYZ = new FlowAnalysisWithLeeYangZeros();
-    // flowLYZ->SetDebugFlag(true);
-    flowLYZ->SetFirstRun(false);
-    flowLYZ->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
-    flowLYZ->Init();
+    flowLYZSUM = new FlowAnalysisWithLeeYangZeros();
+    flowLYZSUM->SetDebugFlag(debug);
+    flowLYZSUM->SetUseProduct(false);
+    flowLYZSUM->SetFirstRun(false);
+    flowLYZSUM->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
+    flowLYZSUM->Init();
   }
 
-  if (LYZ_SUM_PRODUCT_1) {
-    flowLYZ = new FlowAnalysisWithLeeYangZeros();
-    flowLYZ->SetFirstRun(true);
-    flowLYZ->SetUseProduct(true);
-    flowLYZ->Init();
+  if (LYZ_PRODUCT_1) {
+    flowLYZPROD = new FlowAnalysisWithLeeYangZeros();
+    flowLYZPROD->SetDebugFlag(debug);
+    flowLYZPROD->SetUseProduct(true);
+    flowLYZPROD->SetFirstRun(true);
+    flowLYZPROD->Init();
   }
-  if (LYZ_SUM_PRODUCT_2) {
-    flowLYZ = new FlowAnalysisWithLeeYangZeros();
-    flowLYZ->SetDebugFlag(debug);
-    flowLYZ->SetFirstRun(false);
-    flowLYZ->SetUseProduct(true);
-    flowLYZ->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
-    flowLYZ->Init();
+  if (LYZ_PRODUCT_2) {
+    flowLYZPROD = new FlowAnalysisWithLeeYangZeros();
+    flowLYZPROD->SetDebugFlag(debug);
+    flowLYZPROD->SetUseProduct(true);
+    flowLYZPROD->SetFirstRun(false);
+    flowLYZPROD->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
+    flowLYZPROD->Init();
   }
-  QVector *Q2 = new QVector(); // for LYZ only, need to be improve to be also feasible to QC.
-  // Start event loop
   if (SCALARPRODUCT_1) {
     flowSP = new FlowAnalysisWithScalarProduct();
     flowSP->SetFirstRun(true);
@@ -375,19 +362,12 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowQC->SetEtaGap(eta_gap);
     flowQC->Init();
   }
-
   if (HIGHORDERQCUMULANT) {
     flowHighQC = new FlowAnalysisWithHighOrderQCumulant();
     flowHighQC->Init();
   }
   if (LYZEP) {
-    // if (inputHistogramFileName=="" || inputHistFromLYZSecondRun=="")
-    // {
-    //   cerr << "Input files with needed histograms for Lee Yang Zeros Event Plane aren't set" << endl;
-    //   return;
-    // }
     flowLYZEP = new FlowAnalysisWithLeeYangZerosEventPlane();
-    // flowLYZEP->SetInputFileFromFirstAndSecondRun(inputHistogramFileName, inputHistFromLYZSecondRun);
     flowLYZEP->SetInputFileFromFirstAndSecondRun("FirstRun.root", "SecondRun.root");
     flowLYZEP->Init();
   }
@@ -413,15 +393,15 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     if (readMCTracks) mult = reader->GetMcTrackSize();
     else mult = reader->GetRecoTrackSize();
 
-    if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->Zero();
+    if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2)           flowEtaSub->Zero();
     if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->Zero();
-    if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->Zero();
-    if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->Zero();
-    if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->Zero();
-    Q2->Zero();
-    if (QCUMULANT) flowQC->Zero();
-    if (HIGHORDERQCUMULANT) flowHighQC->Zero();
-    if (LYZEP) flowLYZEP->Zero();
+    if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2)             flowFHCalEP->Zero();
+    if (LYZ_SUM_1 || LYZ_SUM_2)                             flowLYZSUM->Zero();
+    if (LYZ_PRODUCT_1 || LYZ_PRODUCT_2)                     flowLYZPROD->Zero();
+    if (SCALARPRODUCT_1 || SCALARPRODUCT_2)                 flowSP->Zero();
+    if (QCUMULANT)                                          flowQC->Zero();
+    if (HIGHORDERQCUMULANT)                                 flowHighQC->Zero();
+    if (LYZEP)                                              flowLYZEP->Zero();
     
     if ((FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) && !readMCTracks)
     {
@@ -436,9 +416,8 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessFirstTrackLoopFHCal(eta, phi, energy);
       }
     }
-    
     for (Int_t iTrk = 0; iTrk < mult; iTrk++)
-    { // Track loop
+    { // First Track loop
       if (readMCTracks)
       {
         auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(iTrk);
@@ -476,69 +455,96 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessFirstTrackLoop(eta, phi, pt);
         if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessFirstTrackLoopTPC(eta, phi, pt);
         if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->ProcessFirstTrackLoop(eta, phi);
-        if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->ProcessFirstTrackLoop(phi, pt, icent);
-        Q2->CalQVector(phi, 1.);
+        if (LYZ_SUM_1 || LYZ_SUM_2) flowLYZSUM->ProcessFirstTrackLoopRP(phi, pt, icent);
+        if (LYZ_PRODUCT_1 || LYZ_PRODUCT_2) flowLYZPROD->ProcessFirstTrackLoopRP(phi, pt, icent);
         if (QCUMULANT) flowQC->ProcessFirstTrackLoopRP(eta, phi);
         if (HIGHORDERQCUMULANT) flowHighQC->ProcessFirstTrackLoopRP(phi);
       }
 
       if (QCUMULANT) flowQC->ProcessFirstTrackLoopPOI(ipt, eta, phi, fId, charge);
-    } // end of track loop
+      if (LYZ_SUM_1 || LYZ_SUM_2) flowLYZSUM->ProcessFirstTrackLoopPOI(pt);
+      if (LYZ_PRODUCT_1 || LYZ_PRODUCT_2) flowLYZPROD->ProcessFirstTrackLoopPOI(pt);
+    } // end of First Track loop
     
     if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessEventAfterFirstTrackLoop(cent);
     if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessEventAfterFirstTrackLoop(cent);    
     if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->ProcessEventAfterFirstTrackLoop(cent);
     if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->ProcessEventAfterFirstTrackLoop(cent);
-    if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->ProcessEventAfterFirstTrackLoop(Q2, icent);
+    if (LYZ_SUM_1 || LYZ_SUM_2) flowLYZSUM->ProcessEventAfterFirstTrackLoop(icent);
+    if (LYZ_PRODUCT_1 || LYZ_PRODUCT_2) flowLYZPROD->ProcessEventAfterFirstTrackLoop(icent);
     if (QCUMULANT) flowQC->ProcessEventAfterFirstTrackLoop(icent);
     if (HIGHORDERQCUMULANT) flowHighQC->ProcessEventAfterFirstTrackLoop(icent);
-    if (LYZEP) flowLYZEP->ProcessEventAfterFirstTrackLoop(Q2, icent);
-    if (ETASUBEVENTPLANE_2 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_2 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_2 || SCALARPRODUCT_2 || LYZEP)
+    if (LYZEP) flowLYZEP->ProcessEventAfterFirstTrackLoop(icent);
+    if (ETASUBEVENTPLANE_2 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_2 || LYZ_SUM_2 || LYZ_PRODUCT_2 || SCALARPRODUCT_2 || LYZEP)
     {
       for (Int_t iTrk = 0; iTrk < mult; iTrk++)
       { // 2nd Track loop
         if (readMCTracks)
         {
           auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(iTrk);
+          if (!trackCut(mcTrack)) { continue; }
           pt = mcTrack->GetPt();
           eta = mcTrack->GetEta();
           phi = mcTrack->GetPhi();
-          if (!trackCut(mcTrack)) { continue; }
+          auto particle = (TParticlePDG*) TDatabasePDG::Instance()->GetParticle(mcTrack->GetPdg());   
+          charge = 1./3.*particle->Charge();
+          fId = findId(mcTrack);
         }
         else 
         { // Read reco tracks
           auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
           auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(recoTrack->GetMcId());
+          if (bMotherIDcut) { if (!trackCutMotherID(recoTrack, mcTrack)) { continue; } }
+          else { if (!trackCut(recoTrack)) { continue; } }
           pt = recoTrack->GetPt();
           eta = recoTrack->GetEta();
           phi = recoTrack->GetPhi();
           charge = recoTrack->GetCharge();
-          if (bMotherIDcut) { if (!trackCutMotherID(recoTrack, mcTrack)) { continue; } }
-          else { if (!trackCut(recoTrack)) { continue; } }
+          if (bMotherIDcut) { fId = findId(mcTrack); }
+          else { fId = findId(recoTrack); }
         }
 
-
-        if (ETASUBEVENTPLANE_2) flowEtaSub->ProcessSecondTrackLoop(eta, phi, pt, cent);
-        if (THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessSecondTrackLoop(eta, phi, pt, cent);
-        if (FHCALEVENTPLANE_2) flowFHCalEP->ProcessSecondTrackLoop(eta, phi, pt, cent);
-        if (SCALARPRODUCT_2) flowSP->ProcessSecondTrackLoop(eta, phi, pt, cent);
-        if (LYZ_SUM_2 || LYZ_SUM_PRODUCT_2) flowLYZ->ProcessSecondTrackLoop(phi, pt, icent);
-        if (LYZEP) flowLYZEP->ProcessSecondTrackLoop(eta, phi, pt, cent);
-      }
+        if (ETASUBEVENTPLANE_2) flowEtaSub->ProcessSecondTrackLoop(eta, phi, pt, cent, fId, charge);
+        if (THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessSecondTrackLoop(eta, phi, pt, cent, fId, charge);
+        if (FHCALEVENTPLANE_2) flowFHCalEP->ProcessSecondTrackLoop(eta, phi, pt, cent, fId, charge);
+        if (SCALARPRODUCT_2) flowSP->ProcessSecondTrackLoop(eta, phi, pt, cent, fId, charge);
+        if (LYZ_SUM_2) flowLYZSUM->ProcessSecondTrackLoop(phi, pt, icent);
+        if (LYZ_PRODUCT_2) flowLYZPROD->ProcessSecondTrackLoop(phi, pt, icent);
+        if (LYZEP) flowLYZEP->ProcessSecondTrackLoop(eta, phi, pt, cent, fId, charge);
+      } // end of 2nd Track loop
     }
     
   } // end event loop
   
   // Writing output
+  const Int_t nMethods = 9;
+  TString dirNameMethod[nMethods] = {"ETASUBEP","ETA3SUBEP","FHCALEP","SP","LYZSUM","LYZPROD","QC","HQC","LYZEP"};
   fo->cd();
-  if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->SaveHist();
-  if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->SaveHist();
-  if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->SaveHist();
-  if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->SaveHist();
-  if (LYZ_SUM_1 || LYZ_SUM_2 || LYZ_SUM_PRODUCT_1 || LYZ_SUM_PRODUCT_2) flowLYZ->SaveHist();
-  if (QCUMULANT) flowQC->SaveHist();
-  if (HIGHORDERQCUMULANT) flowHighQC->SaveHist();
-  if (LYZEP) flowLYZEP->SaveHist();
+  TDirectoryFile *dirFileFinal[nMethods] = {nullptr};
+  for(Int_t i=0;i<nMethods;i++)
+  {
+    dirFileFinal[i] = new TDirectoryFile(dirNameMethod[i].Data(),dirNameMethod[i].Data());
+  }
+  // if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->SaveHist();
+  // if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->SaveHist();
+  // if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->SaveHist();
+  // if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->SaveHist();
+  // if (LYZ_SUM_1 || LYZ_SUM_2) flowLYZSUM->SaveHist();
+  // if (LYZ_PRODUCT_1 || LYZ_PRODUCT_2) flowLYZPROD->SaveHist();
+  // if (QCUMULANT) flowQC->SaveHist();
+  // if (HIGHORDERQCUMULANT) flowHighQC->SaveHist();
+  // if (LYZEP) flowLYZEP->SaveHist();
+
+  if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2)           flowEtaSub->SaveHist(dirFileFinal[0]);
+  if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->SaveHist(dirFileFinal[1]);
+  if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2)             flowFHCalEP->SaveHist(dirFileFinal[2]);
+  if (SCALARPRODUCT_1 || SCALARPRODUCT_2)                 flowSP->SaveHist(dirFileFinal[3]);
+  if (LYZ_SUM_1 || LYZ_SUM_2)                             flowLYZSUM->SaveHist(dirFileFinal[4]);
+  if (LYZ_PRODUCT_1 || LYZ_PRODUCT_2)                     flowLYZPROD->SaveHist(dirFileFinal[5]);
+  if (QCUMULANT)                                          flowQC->SaveHist(dirFileFinal[6]);
+  if (HIGHORDERQCUMULANT)                                 flowHighQC->SaveHist(dirFileFinal[7]);
+  if (LYZEP)                                              flowLYZEP->SaveHist(dirFileFinal[8]);
+  
   fo->Close();
 
   timer.Stop();
