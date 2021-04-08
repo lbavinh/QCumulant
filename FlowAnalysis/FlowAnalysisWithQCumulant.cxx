@@ -402,7 +402,7 @@ void FlowAnalysisWithQCumulant::ProcessEventAfterFirstTrackLoop(const Int_t &ice
                                                                   MGap[ieta-1], MGap[ieta],
                                                                   mpGap[ieta][ipt][id], mqGap[ieta][ipt][id]);            
           pReducedCorrelator2EtaGap[id]->Fill(0.5 + ipt, 0.5 + icent, redCor22Gap[ieta][ipt][id], wred2Gap[ieta][ipt][id]);
-          pReducedCorrelator2EtaGap[id]->Fill(0.5 + ipt, 0.5 + icent, redCor24Gap[ieta][ipt][id], wred4Gap[ieta][ipt][id]); 
+          pReducedCorrelator4EtaGap[id]->Fill(0.5 + ipt, 0.5 + icent, redCor24Gap[ieta][ipt][id], wred4Gap[ieta][ipt][id]); 
           // TProfile for covariance calculation in statistic error
           pCov22RedEtaGap[id]->Fill(0.5 + ipt, 0.5 + icent, cor22Gap * redCor22Gap[ieta][ipt][id], w2Gap * wred2Gap[ieta][ipt][id]);                                          // <2>*<2'>
           pCov24RedEtaGap[id]->Fill(0.5 + ipt, 0.5 + icent, cor22Gap * redCor24Gap[ieta][ipt][id], w2Gap * wred4Gap[ieta][ipt][id]);                                          // <2>*<4'>

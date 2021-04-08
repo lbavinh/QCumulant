@@ -77,10 +77,11 @@ TCanvas *DrawTGraph(std::vector<TGraphErrors*> vgr, TString str,
   vgr.at(0)->GetXaxis()->SetTitleSize(0.07);
   vgr.at(0)->GetYaxis()->SetTitleSize(0.07);
   vgr.at(0)->GetYaxis()->SetTitleOffset(1.08);
-
+  vgr.at(0)->SetLineWidth(1.);
   vgr.at(0)->Draw("AP PLC PMC");
   for (Int_t i=1; i<vgr.size();i++)
   {
+    vgr.at(i)->SetLineWidth(1.);
     vgr.at(i)->Draw("P PLC PMC");
   }
 
@@ -183,7 +184,7 @@ TCanvas *DrawTGraph(std::vector<TGraphErrors*> vgr, TString str,
     vgrRatio.at(igr)->SetMarkerSize(1.6);
     vgrRatio.at(igr)->SetLineColor(vgr.at(igr+1)->GetMarkerStyle());
     vgrRatio.at(igr)->SetMarkerColor(vgr.at(igr+1)->GetMarkerStyle());
-    // vgrRatio.at(igr)->SetLineWidth(1.);
+    vgrRatio.at(igr)->SetLineWidth(1.);
     // grRatio->GetXaxis()->SetLimits(0.95*vx_gr1[0],1.05*vx_gr1[n1bins-1]);
     if (igr==0)
     {
@@ -343,7 +344,7 @@ TProfile *PlotPtIntegratedV2(TProfile2D *const &prV2,
 {
   Int_t pt_bin_low = prV2->GetYaxis()->FindBin(pt_low);
   Int_t pt_bin_high = prV2->GetYaxis()->FindBin(pt_high-0.001);
-  TProfile *prV2Integrated = (TProfile *)prV2->ProfileX(Form("%s_pt_%1.1f_%1.1f",prV2_2D->GetName(),pt_low, pt_high), pt_bin_low, pt_bin_high);
+  TProfile *prV2Integrated = (TProfile *)prV2->ProfileX(Form("%s_pt_%1.1f_%1.1f",prV2->GetName(),pt_low, pt_high), pt_bin_low, pt_bin_high);
   prV2Integrated->SetTitle(Form("%.1f<p_{T}<%.1f GeV/c;Centrality, %%;v_{2}", pt_low, pt_high));
   return prV2Integrated;
 }
@@ -369,7 +370,7 @@ TProfile *PlotV2vsEta(TProfile2D *const &prV2,
 {
   Int_t cent_bin_low = prV2->GetXaxis()->FindBin(cent_low);
   Int_t cent_bin_high = prV2->GetXaxis()->FindBin(cent_high-1.);
-  TProfile *prV2diffEta = (TProfile *)prV2->ProfileY(Form("%s_cent_%1.0f_%1.0f",prV2_2D->GetName(),cent_low, cent_high), cent_bin_low, cent_bin_high);
+  TProfile *prV2diffEta = (TProfile *)prV2->ProfileY(Form("%s_cent_%1.0f_%1.0f",prV2->GetName(),cent_low, cent_high), cent_bin_low, cent_bin_high);
   prV2diffEta->SetTitle(Form("%.0f-%.0f%%;#eta;v_{2}", cent_low, cent_high));
   return prV2diffEta;
 }
@@ -395,7 +396,7 @@ TProfile *PlotV2vsPt(TProfile2D *const &prV2,
 {
   Int_t cent_bin_low = prV2->GetXaxis()->FindBin(cent_low);
   Int_t cent_bin_high = prV2->GetXaxis()->FindBin(cent_high-1);
-  TProfile *prV2diffpt = (TProfile *)prV2->ProfileY(Form("%s_cent_%1.0f_%1.0f",prV2_2D->GetName(),cent_low, cent_high), cent_bin_low, cent_bin_high);
+  TProfile *prV2diffpt = (TProfile *)prV2->ProfileY(Form("%s_cent_%1.0f_%1.0f",prV2->GetName(),cent_low, cent_high), cent_bin_low, cent_bin_high);
   prV2diffpt->SetTitle(Form("%.0f-%.0f%%;p_{T}, GeV/c;v_{2}", cent_low, cent_high));
   return prV2diffpt;
 }
