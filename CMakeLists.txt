@@ -50,3 +50,7 @@ set(FLOW_INCLUDE_LIBRARIES
 
 add_executable(RunFlowAnalysis main.cpp)
 target_link_libraries(RunFlowAnalysis ${FLOW_INCLUDE_LIBRARIES})
+add_executable(GetDCA GetDCA.cpp)
+target_link_libraries(GetDCA ${FLOW_INCLUDE_LIBRARIES})
+add_executable(FitDCA FitDCA.cpp)
+target_link_libraries(FitDCA ${FLOW_INCLUDE_LIBRARIES})

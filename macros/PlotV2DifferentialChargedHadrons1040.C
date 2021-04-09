@@ -1,90 +1,60 @@
-#include "PlotV2LYZ.C"
-#include "PlotV2EtaSubEventPlane.C"
-#include "PlotV2ThreeEtaSubEventPlane.C"
-#include "PlotV2FHCalEventPlane.C"
-#include "PlotV2ScalarProduct.C"
-#include "PlotV2QCumulant.C"
-// #include "DrawTGraph.C"
-
-vector<TGraphErrors*>* PlotV2DifferentialChargedHadrons1040(TString inputFirstRunFileName = "FirstRun_UrQMD_7.7_Reco.root", TString inputSecondRunFileName = "SecondRun_UrQMD_7.7_Reco.root")
+#include "DrawTGraph.C"
+#include "../constants.C"
+void PlotV2DifferentialChargedHadrons1040(TString inputFileName = "SecondRun.root")
 {
-
+  Bool_t saveAsPNG = true;
+  TString outDirName = "pics";
   Double_t maxpt = 3.6;    // max pt for differential flow
   Double_t minpt = 0.;     // min pt for differential flow
   Double_t maxptRF = 3.;   // max pt for reference flow
   Double_t minptRF = 0.2;  // min pt for reference flow
   Double_t eta_cut = 1.5;  // pseudorapidity acceptance window for flow measurements
   Double_t eta_gap = 0.05; // +-0.05, eta-gap between 2 eta sub-event of two-particle cumulants method with eta-gap
-  const int ratioToMethod = 0;
-  const double J1rootJ0 = 0.519147;
-  double X[npt];
-  for (int ipt=0; ipt<npt; ipt++)
+  const Int_t ratioToMethod = 0;
+  const Double_t J1rootJ0 = 0.519147;
+  Double_t X[npt];
+  for (Int_t ipt=0; ipt<npt; ipt++)
   {
     X[ipt] = (pTBin[ipt] + pTBin[ipt+1]) / 2.;
   }
-  const double errX[npt] = {0.};
+  const Double_t errX[npt] = {0.};
   bool bUseProduct = 1;
-  Int_t nmethod = 4;
-  TString title[]={"v_{2}{#Psi_{2,TPC}}","v_{2}^{SP}{Q_{2,TPC}}","v_{2}{#Psi_{1,FHCal}}","v_{2}{#Psi_{2,3-sub}}"};
-  const int markerStyle[] = {24,22,27,21,20,25,28,26,23};
-  const float markerSize = 1.3;
-  TGraphErrors *graph[1][nmethod];
-  TFile *firun1 = new TFile(inputFirstRunFileName.Data(),"read");
-  TFile *firun2 = new TFile(inputSecondRunFileName.Data(),"read");
-  auto *prV2TPCEP3D = (TProfile3D*) firun2->Get("prV2EtaSubEventPlane");
-  auto *prV2SP3D = (TProfile3D*) firun2->Get("prV2ScalarProduct");
-  auto *prV2FHCalEP3D = (TProfile3D*) firun2->Get("prV2FHCalEventPlane");
-  auto *prV2ThreeSubEP3D = (TProfile3D*) firun2->Get("prV2ThreeEtaSub");
-  for (int i = 0; i < 1; i++)
+  const Int_t nmethod = 4;
+  TString methodName[nmethod] = {"EtaSub", "SP", "FHCalEP", "Eta3Sub"};
+  TString title[nmethod]={"v_{2}{#Psi_{2,TPC}}","v_{2}^{SP}{Q_{2,TPC}}","v_{2}{#Psi_{1,FHCal}}","v_{2}{#Psi_{2,3-sub}}"};
+  const Int_t markerStyle[] = {25,20,22,24};
+  const Float_t markerSize = 1.3;
+  TGraphErrors *graph[nmethod];
+  TFile *fi = new TFile(inputFileName.Data(),"read");
+  for (Int_t i=0; i<nmethod; i++)
   {
-    TProfile *prV2TPCEP = PlotV2EtaSubDifferentialVersusPt(prV2TPCEP3D,10.,40.,eta_cut);
-    TProfile *prV2SP = PlotV2ScalarProductDifferentialVersusPt(prV2SP3D,10.,40.,eta_cut);
-    TProfile *prV2FHCalEP = PlotV2FHCalEPDifferentialVersusPt(prV2FHCalEP3D,10.,40.,eta_cut);
-    TProfile *prV2ThreeEtaSub = PlotV2ThreeEtaSubEPDifferentialVersusPt(prV2ThreeSubEP3D,10.,40.,eta_cut);
-    graph[i][0] = Converter(prV2TPCEP);
-    graph[i][1] = Converter(prV2SP);
-    graph[i][2] = Converter(prV2FHCalEP);
-    graph[i][3] = Converter(prV2ThreeEtaSub);
-  }
-  
-
-  for (int ic = 0; ic < 1; ic++)
-  {
-    for (int i=0; i<nmethod; i++)
-    {
-    // graph[ic][i]->RemovePoint(0);
-    graph[ic][i]->SetTitle(title[i].Data());
-    graph[ic][i]->SetMarkerStyle(markerStyle[i]);
-    graph[ic][i]->SetMarkerSize(markerSize);
-    graph[ic][i]->GetXaxis()->SetTitle("p_{T}, GeV/c");
-    graph[ic][i]->GetYaxis()->SetTitle("v_{2}");
-    graph[ic][i]->SetDrawOption("P PLC PMC");
-    }
+    auto prV2CentPt = (TProfile2D *)fi->FindObjectAny(Form("prV2%svsPt_pid%i",methodName[i].Data(),8));
+    TProfile *tmp = PlotV2vsPt(prV2CentPt,10,40);// v2 versus pt, 10-40%
+    graph[i] = Converter(tmp);
+    // graph[i]->RemovePoint(0);
+    graph[i]->SetTitle(title[i].Data());
+    graph[i]->SetMarkerStyle(markerStyle[i]);
+    graph[i]->SetMarkerSize(markerSize);
+    graph[i]->GetXaxis()->SetTitle("p_{T}, GeV/c");
+    graph[i]->GetYaxis()->SetTitle("v_{2}");
+    graph[i]->SetDrawOption("P PLC PMC");
   }
 
-  vector<TGraphErrors*> vGr[ncent];
-  for (int ic = 0; ic < 1; ic++)
+  vector<TGraphErrors*> vGr;
+  vGr.push_back(graph[ratioToMethod]);
+  for (Int_t i=0; i<nmethod; i++)
   {
-    vGr[ic].push_back(graph[ic][ratioToMethod]);
-    // for (int i=0; i<nmethod; i++)
-    // {
-    //   if (i==ratioToMethod) continue;
-    //   vGr[ic].push_back(graph[ic][i]);
-    // }
-    // vGr[ic].push_back(graph[ic][0]);
-    vGr[ic].push_back(graph[ic][1]);
-    vGr[ic].push_back(graph[ic][2]);
-    vGr[ic].push_back(graph[ic][3]);
-    // vGr[ic].push_back(graph[ic][4]);
-
-  TCanvas *can = (TCanvas*)DrawTGraph(vGr[ic],"10-40%",0.89, 1.11, minpt, 2.8, -0.005, 0.25,
-                                      // 0.65, 0.05, 0.9, 0.5,
+    if (i==ratioToMethod) continue;
+    vGr.push_back(graph[i]);
+  }
+  TCanvas *can = (TCanvas*)DrawTGraph(vGr,"10-40%",0.89, 1.11, minpt, 2.8, -0.005, 0.25,
                                       0.2, 0.45, 0.4, 0.88,
-                                      "GEANT4, UrQMD, Au+Au at #sqrt{s_{NN}}=7.7GeV", Form("Ch. hadrons, |#eta|<%1.1f",eta_cut),1,Form("Ratio to %s",title[ratioToMethod].Data()));
+                                      "UrQMD, Au+Au at #sqrt{s_{NN}}=7.7GeV", Form("Ch. hadrons, |#eta|<%1.1f",eta_cut),
+                                      true,Form("Ratio to %s",title[ratioToMethod].Data()));
   can->SetName(Form("10-40%%"));
-  can->SaveAs(Form("DiffFlow_UrQMD_7.7_10_40%%.pdf"));
-  }
-
-
-  return vGr;
+  can->SaveAs(Form(""));
+  if (saveAsPNG){
+    gSystem->Exec(Form("mkdir -p ./%s/",outDirName.Data()));
+    can->SaveAs(Form("./%s/DiffFlow_Centrality_10_40_hadrons.png",outDirName.Data()));
+  }  
 }
