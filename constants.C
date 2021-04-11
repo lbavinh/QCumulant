@@ -21,10 +21,12 @@ const Double_t bin_cent[ncent + 1] = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80};
 
 // LYZ
 const Int_t rbins = 2500;
-const Double_t rMax = 0.5;
-const Double_t rMin = 0.005;
-const Double_t rMaxSum = 0.5;
-const Double_t rMinSum = 0.005;
+const Double_t rMinPro = 0.0;
+const Double_t rMaxPro = 1.0;
+const Double_t rMaxProWithMweight = 250.0; // using particle weight 1/M to reduce the effect of multiplicity fluctuations
+const Double_t rMinSum = 0.0;
+const Double_t rMaxSum = 1.0;
+const Double_t rMaxSumWithMweight = 250.0; // using particle weight 1/M to reduce the effect of multiplicity fluctuations
 const Int_t nTheta = 5;
 
 // QCumulant - High Order

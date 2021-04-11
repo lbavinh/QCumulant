@@ -81,6 +81,7 @@ Double_t BesselJ0(Double_t x)
 TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputFileName2 = "SecondRun.root")
 {
   Bool_t bUseProduct = 1;
+  Bool_t bUseMultWeight = 1;
   Bool_t bDebug = 1;
   const Int_t markerStyle[]={25,20,28,27,23,26};
   const TString methodName[]={"LYZ (Sum)", "LYZ (Prod)"};
@@ -99,17 +100,17 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
 
   TProfile *prReGtheta[ncent][nTheta];
   TProfile *prImGtheta[ncent][nTheta];
-  TProfile *prRefMult;
+  TProfile *prMultRP;
   TProfile *prQ2x;
   TProfile *prQ2y;
   TProfile *prQ2ModSq;
   if (bUseProduct){
-    prRefMult = (TProfile*) fi1->FindObjectAny("prRefMultProd");
-    prQ2x = (TProfile*) fi1->FindObjectAny("prQ2xProd");
-    prQ2y = (TProfile*) fi1->FindObjectAny("prQ2yProd");
-    prQ2ModSq = (TProfile*) fi1->FindObjectAny("prQ2ModSqProd");
+    prMultRP = (TProfile*) fi1->FindObjectAny("prMultRPPro");
+    prQ2x = (TProfile*) fi1->FindObjectAny("prQ2xPro");
+    prQ2y = (TProfile*) fi1->FindObjectAny("prQ2yPro");
+    prQ2ModSq = (TProfile*) fi1->FindObjectAny("prQ2ModSqPro");
   }else{
-    prRefMult = (TProfile*) fi1->FindObjectAny("prRefMultSum");
+    prMultRP = (TProfile*) fi1->FindObjectAny("prMultRPSum");
     prQ2x = (TProfile*) fi1->FindObjectAny("prQ2xSum");
     prQ2y = (TProfile*) fi1->FindObjectAny("prQ2ySum");
     prQ2ModSq = (TProfile*) fi1->FindObjectAny("prQ2ModSqSum");
@@ -121,8 +122,8 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
     {
       if (bUseProduct)
       {
-        prReGtheta[i][j] = (TProfile*) fi1->FindObjectAny(Form("prReGthetaProduct_cent%i_theta%i", i, j));
-        prImGtheta[i][j] = (TProfile*) fi1->FindObjectAny(Form("prImGthetaProduct_cent%i_theta%i", i, j));
+        prReGtheta[i][j] = (TProfile*) fi1->FindObjectAny(Form("prReGthetaPro_cent%i_theta%i", i, j));
+        prImGtheta[i][j] = (TProfile*) fi1->FindObjectAny(Form("prImGthetaPro_cent%i_theta%i", i, j));
       }
       else{
       prReGtheta[i][j] = (TProfile*) fi1->FindObjectAny(Form("prReGthetaSum_cent%i_theta%i", i, j));
@@ -171,7 +172,7 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
   TProfile *prMultPOI[ncent];
   for (Int_t ic = 0; ic < ncent; ic++)
   {
-    if (bUseProduct) prMultPOI[ic] = (TProfile*) fi2->FindObjectAny(Form("prMultPOIProd_cent%i",ic));
+    if (bUseProduct) prMultPOI[ic] = (TProfile*) fi2->FindObjectAny(Form("prMultPOIPro_cent%i",ic));
     else prMultPOI[ic] = (TProfile*) fi2->FindObjectAny(Form("prMultPOISum_cent%i",ic));
   }
 
@@ -179,7 +180,7 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
 
   if (bDebug){
     cout << "MultMean:" << endl;
-    GetMultMean(prRefMult);
+    GetMultMean(prMultRP);
   }
 
   Double_t dChi2[ncent]={0.};
@@ -188,7 +189,7 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
 
   for (Int_t ic = 0; ic < ncent; ic++)
   {
-    Double_t refmult = prRefMult->GetBinContent(ic+1);
+    Double_t multRP = prMultRP->GetBinContent(ic+1);
     Double_t v2int = 0., v2eint = 0., v2theta[nTheta] = {0.};
     Int_t thetacount = 0;
 
@@ -203,7 +204,11 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
         thetacount++;
       }
     }
-    if (thetacount!=0) v2int /= thetacount*refmult;
+    if (thetacount!=0) 
+    {
+      if (bUseMultWeight) v2int /= thetacount; // 1/M weight gives v = V_int
+      else v2int /= thetacount*multRP;
+    }
     else {v2int = 0.;}
     
     Float_t modQ2sqmean = prQ2ModSq->GetBinContent(ic+1);
@@ -220,7 +225,7 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
         exp(-sqr(rootJ0/chi2)*cos(arg)/2.)*
         BesselJ0(2.*rootJ0*cos(arg/2.));
     }
-    Float_t neve = prRefMult->GetBinEntries(ic+1);
+    Float_t neve = prMultRP->GetBinEntries(ic+1);
     Float_t err2mean = v2int*sqrt(temp/2./neve/nTheta)/rootJ0/J1rootJ0;
 
     for (Int_t it = 0; it < nTheta; it++) dVtheta[ic][it] = v2theta[it];
@@ -326,7 +331,7 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
     // Cross check integrated flow - correct!
     for (Int_t ic = 0; ic < ncent; ic++)
     {
-      Float_t refmult = prRefMult->GetBinContent(ic+1);
+      Float_t multRP = prMultRP->GetBinContent(ic+1);
       for (Int_t ith = 0; ith < nTheta; ith++)
       {
         Double_t integratedFlow = 0;
@@ -338,7 +343,7 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
           denominator += rpmult;
         }
         if (denominator != 0) integratedFlow /= denominator;
-        cout <<"cent: "<< ic << " " <<dVtheta[ic][ith] << "\t" << integratedFlow << endl;//refmult
+        cout <<"cent: "<< ic << " " <<dVtheta[ic][ith] << "\t" << integratedFlow << endl;//multRP
       }
     }
   }
@@ -348,12 +353,12 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
   Bool_t bCent1040 = 1;
   if (bCent1040)
   {
-    Double_t refmult = prRefMult->GetBinContent(2+1) * prRefMult->GetBinEntries(2+1)
-                   + prRefMult->GetBinContent(3+1) * prRefMult->GetBinEntries(3+1)
-                   + prRefMult->GetBinContent(4+1) * prRefMult->GetBinEntries(4+1);
-    refmult /= prRefMult->GetBinEntries(2+1) + prRefMult->GetBinEntries(3+1) + prRefMult->GetBinEntries(4+1);
-    cout << prRefMult->GetBinContent(2+1) <<" "<<prRefMult->GetBinContent(3+1)<<" "<<prRefMult->GetBinContent(4+1) << endl; 
-    if (bDebug) cout << "refmult 10-40% =" << refmult << endl;    
+    Double_t multRP = prMultRP->GetBinContent(2+1) * prMultRP->GetBinEntries(2+1)
+                   + prMultRP->GetBinContent(3+1) * prMultRP->GetBinEntries(3+1)
+                   + prMultRP->GetBinContent(4+1) * prMultRP->GetBinEntries(4+1);
+    multRP /= prMultRP->GetBinEntries(2+1) + prMultRP->GetBinEntries(3+1) + prMultRP->GetBinEntries(4+1);
+    cout << prMultRP->GetBinContent(2+1) <<" "<<prMultRP->GetBinContent(3+1)<<" "<<prMultRP->GetBinContent(4+1) << endl; 
+    if (bDebug) cout << "multRP 10-40% =" << multRP << endl;    
     Double_t v2int;
     Float_t thetacount = 0;
 
@@ -374,15 +379,19 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
         thetacount++;
       }
     }
-    if (thetacount!=0) v2int /= thetacount*refmult;
+    if (thetacount!=0) 
+    {
+      if (bUseMultWeight) v2int /= thetacount; // 1/M weight gives v = V_int
+      else v2int /= thetacount*multRP;
+    }
     else {v2int = 0.;}
     Float_t modQ2sqmean=0, Q2xmean=0, Q2ymean=0, mult=0;
     for (Int_t ic = 2; ic < 5; ic++)
     {
-      mult += prRefMult->GetBinContent(ic+1);
-      modQ2sqmean += prQ2ModSq->GetBinContent(ic+1) * prRefMult->GetBinContent(ic+1);
-      Q2xmean += prQ2x->GetBinContent(ic+1) * prRefMult->GetBinContent(ic+1);
-      Q2ymean += prQ2y->GetBinContent(ic+1) * prRefMult->GetBinContent(ic+1);
+      mult += prMultRP->GetBinContent(ic+1);
+      modQ2sqmean += prQ2ModSq->GetBinContent(ic+1) * prMultRP->GetBinContent(ic+1);
+      Q2xmean += prQ2x->GetBinContent(ic+1) * prMultRP->GetBinContent(ic+1);
+      Q2ymean += prQ2y->GetBinContent(ic+1) * prMultRP->GetBinContent(ic+1);
     }
     modQ2sqmean /= mult;
     Q2xmean /= mult;
@@ -398,7 +407,7 @@ TGraphErrors* PlotV2LYZ(TString inputFileName1 = "FirstRun.root", TString inputF
         exp(-sqr(rootJ0/chi2)*cos(arg)/2.)*
         BesselJ0(2.*rootJ0*cos(arg/2.));
     }
-    Float_t neve = prRefMult->GetBinEntries(2+1) + prRefMult->GetBinEntries(3+1) + prRefMult->GetBinEntries(4+1);
+    Float_t neve = prMultRP->GetBinEntries(2+1) + prMultRP->GetBinEntries(3+1) + prMultRP->GetBinEntries(4+1);
     TProfile* prMultPOI1040 = (TProfile*) prMultPOI[2]->Clone(Form("Clone_%s",prMultPOI[2]->GetName()));
     prMultPOI1040->Add(prMultPOI[3]);
     prMultPOI1040->Add(prMultPOI[4]);

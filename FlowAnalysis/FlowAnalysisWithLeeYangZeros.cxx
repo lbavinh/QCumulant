@@ -6,21 +6,23 @@ FlowAnalysisWithLeeYangZeros::FlowAnalysisWithLeeYangZeros() :
 fDebug(kFALSE),
 fUseProduct(kFALSE),
 fFirstRun(kTRUE),
+fUseMultWeight(kTRUE),
 fTheta(),
 fQtheta(),
 fQn(nullptr),
 fPrReGthetaSum(),
 fPrImGthetaSum(),
 fHistGthetaSum(nullptr),
-fPrReGthetaProduct(),
-fPrImGthetaProduct(),
-fHistGthetaProduct(nullptr),
+fPrReGthetaPro(),
+fPrImGthetaPro(),
+fHistGthetaPro(nullptr),
 fRSum(),
 fRProduct(),
 fMult(0),
-fGenFunS(),
+fGenFunS(0.),
 fGenFunP(),
-fPrRefMult(nullptr),
+fWeight(1.),
+fPrMultRP(nullptr),
 fPrQ2x(nullptr),
 fPrQ2y(nullptr),
 fPrQ2ModSq(nullptr),
@@ -39,7 +41,9 @@ fExponent(),
 fdGr0(),
 fGenfunPror0(),
 fR02Sum(),
-fR02Pro()
+fR02Pro(),
+fPrReDtheta(),
+fPrImDtheta()
 {
 }
 
@@ -56,35 +60,46 @@ void FlowAnalysisWithLeeYangZeros::Init()
   }
   if (fFirstRun)
   { // First run
-    if (fUseProduct) { fHistGthetaProduct = new TH1F(Form("hGthetaProduct"), "", rbins, rMin, rMax); }
-    else{ fHistGthetaSum = new TH1F(Form("hGthetaSum"), "", rbins, rMinSum, rMaxSum); }  
-    
+    if (fUseMultWeight){
+      if (fUseProduct) { fHistGthetaPro = new TH1F(Form("hGthetaPro"), "", rbins, rMinPro, rMaxProWithMweight); }
+      else{ fHistGthetaSum = new TH1F(Form("hGthetaSum"), "", rbins, rMinSum, rMaxSumWithMweight); }      
+    }else{
+      if (fUseProduct) { fHistGthetaPro = new TH1F(Form("hGthetaPro"), "", rbins, rMinPro, rMaxPro); }
+      else{ fHistGthetaSum = new TH1F(Form("hGthetaSum"), "", rbins, rMinSum, rMaxSum); }
+    }
     for (Int_t i = 0; i < ncent; ++i)
     {
       for (Int_t j = 0; j < nTheta; ++j)
       {
-        if (fUseProduct)
-        {
-          fPrReGthetaProduct[i][j] = new TProfile(Form("prReGthetaProduct_cent%i_theta%i", i, j), "", rbins, rMin, rMax);
-          fPrImGthetaProduct[i][j] = new TProfile(Form("prImGthetaProduct_cent%i_theta%i", i, j), "", rbins, rMin, rMax);
-        }
-        else
-        {
-          fPrReGthetaSum[i][j] = new TProfile(Form("prReGthetaSum_cent%i_theta%i", i, j), "", rbins, rMinSum, rMaxSum);
-          fPrImGthetaSum[i][j] = new TProfile(Form("prImGthetaSum_cent%i_theta%i", i, j), "", rbins, rMinSum, rMaxSum);
+        if (fUseMultWeight){
+          if (fUseProduct){
+            fPrReGthetaPro[i][j] = new TProfile(Form("prReGthetaPro_cent%i_theta%i", i, j), "", rbins, rMinPro, rMaxProWithMweight);
+            fPrImGthetaPro[i][j] = new TProfile(Form("prImGthetaPro_cent%i_theta%i", i, j), "", rbins, rMinPro, rMaxProWithMweight);
+          }else{
+            fPrReGthetaSum[i][j] = new TProfile(Form("prReGthetaSum_cent%i_theta%i", i, j), "", rbins, rMinSum, rMaxSumWithMweight);
+            fPrImGthetaSum[i][j] = new TProfile(Form("prImGthetaSum_cent%i_theta%i", i, j), "", rbins, rMinSum, rMaxSumWithMweight);
+          }
+        }else{
+          if (fUseProduct){
+            fPrReGthetaPro[i][j] = new TProfile(Form("prReGthetaPro_cent%i_theta%i", i, j), "", rbins, rMinPro, rMaxPro);
+            fPrImGthetaPro[i][j] = new TProfile(Form("prImGthetaPro_cent%i_theta%i", i, j), "", rbins, rMinPro, rMaxPro);
+          }else{
+            fPrReGthetaSum[i][j] = new TProfile(Form("prReGthetaSum_cent%i_theta%i", i, j), "", rbins, rMinSum, rMaxSum);
+            fPrImGthetaSum[i][j] = new TProfile(Form("prImGthetaSum_cent%i_theta%i", i, j), "", rbins, rMinSum, rMaxSum);
+          }
         }
       }
     }
     if (fUseProduct)
     {
-      fPrRefMult = new TProfile("prRefMultProd", "", ncent, 0, ncent);
-      fPrQ2x = new TProfile("prQ2xProd", "", ncent, 0, ncent);
-      fPrQ2y = new TProfile("prQ2yProd", "", ncent, 0, ncent);
-      fPrQ2ModSq = new TProfile("prQ2ModSqProd", "", ncent, 0, ncent);
+      fPrMultRP = new TProfile("prMultRPPro", "", ncent, 0, ncent);
+      fPrQ2x = new TProfile("prQ2xPro", "", ncent, 0, ncent);
+      fPrQ2y = new TProfile("prQ2yPro", "", ncent, 0, ncent);
+      fPrQ2ModSq = new TProfile("prQ2ModSqPro", "", ncent, 0, ncent);
     }
     else
     {
-      fPrRefMult = new TProfile("prRefMultSum", "", ncent, 0, ncent);
+      fPrMultRP = new TProfile("prMultRPSum", "", ncent, 0, ncent);
       fPrQ2x = new TProfile("prQ2xSum", "", ncent, 0, ncent);
       fPrQ2y = new TProfile("prQ2ySum", "", ncent, 0, ncent);
       fPrQ2ModSq = new TProfile("prQ2ModSqSum", "", ncent, 0, ncent);
@@ -93,7 +108,7 @@ void FlowAnalysisWithLeeYangZeros::Init()
 
     for (Int_t rbin = 0; rbin < rbins; ++rbin)
     {
-      if (fUseProduct) { fRProduct[rbin] = fHistGthetaProduct->GetBinCenter(rbin + 1); }
+      if (fUseProduct) { fRProduct[rbin] = fHistGthetaPro->GetBinCenter(rbin + 1); }
       else { fRSum[rbin] = fHistGthetaSum->GetBinCenter(rbin + 1); }
     }
   }
@@ -104,7 +119,7 @@ void FlowAnalysisWithLeeYangZeros::Init()
     
     for (Int_t ic = 0; ic < ncent; ic++)
     {
-      if (fUseProduct) fPrMultPOI[ic] = new TProfile(Form("prMultPOIProd_cent%i", ic), "", npt, 0, npt);
+      if (fUseProduct) fPrMultPOI[ic] = new TProfile(Form("prMultPOIPro_cent%i", ic), "", npt, 0, npt);
       else fPrMultPOI[ic] = new TProfile(Form("prMultPOISum_cent%i", ic), "", npt, 0, npt);
     }
     if (fUseProduct)
@@ -132,6 +147,8 @@ void FlowAnalysisWithLeeYangZeros::Init()
           fPrReNumer[i][j] = new TProfile(Form("prReNumer_theta%i_cent%i", i, j), "", npt, &pTBin[0]);
           fPrImNumer[i][j] = new TProfile(Form("prImNumer_theta%i_cent%i", i, j), "", npt, &pTBin[0]);
         }
+        fPrReDtheta[i] = new TProfile(Form("prReDtheta_theta%i",i),"", ncent, 0, ncent); // Lee Yang Zeros Event Plane
+        fPrImDtheta[i] = new TProfile(Form("prImDtheta_theta%i",i),"", ncent, 0, ncent); // Lee Yang Zeros Event Plane
       }
     }
     
@@ -141,7 +158,11 @@ void FlowAnalysisWithLeeYangZeros::Init()
 void FlowAnalysisWithLeeYangZeros::Zero()
 {
   fQn->Zero();
-  // fMult = 0.;
+  fWeight = 1.;
+  if (fUseMultWeight) 
+  {
+    fMult = 0;
+  }
   if (!fUseProduct)
   {
     for (Int_t i = 0; i < nTheta; ++i)
@@ -155,11 +176,9 @@ void FlowAnalysisWithLeeYangZeros::Zero()
       for (Int_t i = 0; i < rbins; ++i) {
         for (Int_t j = 0; j < nTheta; ++j) {
           fGenFunP[i][j] = TComplex::One();
-    }}}else {
-      for (Int_t i = 0; i < rbins; ++i) {
-        for (Int_t j = 0; j < nTheta; ++j) {
-          fGenFunS[i][j] = TComplex(0.0, 0.0); 
-    }}}
+        }
+      }
+    }
   }
   else
   { // Second Run
@@ -168,19 +187,28 @@ void FlowAnalysisWithLeeYangZeros::Zero()
       fMultPOI[ipt] = 0.;
     }
 
-      if (fUseProduct) {
-        for (Int_t it = 0; it < nTheta; it++) {
-          fdGr0[it] = TComplex(0.0, 0.0);
-          fGenfunPror0[it] = TComplex::One();
-        }
-      }else { for (Int_t it = 0; it < nTheta; it++) fExponent[it] = TComplex(0.0, 0.0); }
+    if (fUseProduct) {
+      for (Int_t it = 0; it < nTheta; it++) {
+        fdGr0[it] = TComplex(0.0, 0.0);
+        fGenfunPror0[it] = TComplex::One();
+      }
+    }else { for (Int_t it = 0; it < nTheta; it++) fExponent[it] = TComplex(0.0, 0.0); }
     
   }
 }
 
+void FlowAnalysisWithLeeYangZeros::ProcessZeroTrackLoopRP()
+{ // Only for Product LYZ
+  fMult++;
+}
+
 void FlowAnalysisWithLeeYangZeros::ProcessFirstTrackLoopRP(const Double_t &phi, const Double_t &pt, const Int_t &icent)
 {
-  // fMult++;
+  if (fUseMultWeight && fUseProduct)
+  {
+    if (!fMult) { cerr << "In FlowAnalysisWithLeeYangZeros::ProcessFirstTrackLoopRP() fMult==0!!!!" << endl; return; }
+    fWeight = 1.0/fMult;
+  }
   fQn->CalQVector(phi, 1.);
   if (fUseProduct)
   {
@@ -188,15 +216,15 @@ void FlowAnalysisWithLeeYangZeros::ProcessFirstTrackLoopRP(const Double_t &phi, 
       for (Int_t it = 0; it < nTheta; ++it) {
         Double_t dCosTerm = TMath::Cos(2. * (phi - fTheta[it]));
         for (Int_t rbin = 0; rbin < rbins; ++rbin) {
-          fGenFunP[rbin][it] *= TComplex(1.0, fRProduct[rbin] * dCosTerm);
+          fGenFunP[rbin][it] *= TComplex(1.0, fWeight * fRProduct[rbin] * dCosTerm);
         }
       }
     }else{
       for (Int_t it = 0; it < nTheta; ++it) {
         Double_t dCosTerm = TMath::Cos(2. * (phi - fTheta[it]));
-        fGenfunPror0[it] *= TComplex(1.0, fR02Pro[icent][it] * dCosTerm);
-        TComplex cCosTermComplex(1., fR02Pro[icent][it] * dCosTerm);
-        fdGr0[it] += (dCosTerm / cCosTermComplex);
+        fGenfunPror0[it] *= TComplex(1.0, fWeight * fR02Pro[icent][it] * dCosTerm);
+        TComplex cCosTermComplex(1., fWeight * fR02Pro[icent][it] * dCosTerm);
+        fdGr0[it] += (fWeight * dCosTerm / cCosTermComplex);
       }
     }
   }
@@ -220,14 +248,17 @@ void FlowAnalysisWithLeeYangZeros::ProcessEventAfterFirstTrackLoop(const Int_t &
     Double_t Qx = fQn->X();
     Double_t Qy = fQn->Y();
     if (!fUseProduct) {
+      Double_t dWeight;
+      if (fUseMultWeight) dWeight = 1./fQn->GetMult();
+      else { dWeight = 1.; }
       for (Int_t ith = 0; ith < nTheta; ith++) {
-        fQtheta[ith] = Qx * TMath::Cos(2.0 * fTheta[ith]) + Qy * TMath::Sin(2.0 * fTheta[ith]);
+        fQtheta[ith] = dWeight * (Qx * TMath::Cos(2.0 * fTheta[ith]) + Qy * TMath::Sin(2.0 * fTheta[ith]));
       }
     }
     if (fFirstRun)
     { // First run
       Double_t QModSq = Qx * Qx + Qy * Qy;
-      fPrRefMult->Fill(icent, fQn->GetMult());
+      fPrMultRP->Fill(icent, fQn->GetMult());
       fPrQ2x->Fill(icent, Qx);
       fPrQ2y->Fill(icent, Qy);
       fPrQ2ModSq->Fill(icent, QModSq);
@@ -237,8 +268,8 @@ void FlowAnalysisWithLeeYangZeros::ProcessEventAfterFirstTrackLoop(const Int_t &
         {
           for (Int_t it = 0; it < nTheta; it++)
           {
-            fPrReGthetaProduct[icent][it]->Fill(fRProduct[rbin], fGenFunP[rbin][it].Re());
-            fPrImGthetaProduct[icent][it]->Fill(fRProduct[rbin], fGenFunP[rbin][it].Im());            
+            fPrReGthetaPro[icent][it]->Fill(fRProduct[rbin], fGenFunP[rbin][it].Re());
+            fPrImGthetaPro[icent][it]->Fill(fRProduct[rbin], fGenFunP[rbin][it].Im());            
           }
         }
       }
@@ -248,17 +279,10 @@ void FlowAnalysisWithLeeYangZeros::ProcessEventAfterFirstTrackLoop(const Int_t &
         {
           for (Int_t it = 0; it < nTheta; it++)
           {
-            TComplex cExpo = TComplex(0., fRSum[rbin] * fQtheta[it]);
-            fGenFunS[rbin][it] = TComplex::Exp(cExpo); // generating function from Q-vectors
-          }
-        }
-
-        for (Int_t rbin = 0; rbin < rbins; rbin++)
-        {
-          for (Int_t it = 0; it < nTheta; it++)
-          {
-            fPrReGthetaSum[icent][it]->Fill(fRSum[rbin], fGenFunS[rbin][it].Re());
-            fPrImGthetaSum[icent][it]->Fill(fRSum[rbin], fGenFunS[rbin][it].Im());
+            TComplex cExpo(0., fRSum[rbin] * fQtheta[it]);
+            fGenFunS = TComplex::Exp(cExpo); // generating function from Q-vectors
+            fPrReGthetaSum[icent][it]->Fill(fRSum[rbin], fGenFunS.Re());
+            fPrImGthetaSum[icent][it]->Fill(fRSum[rbin], fGenFunS.Im());
           }
         }
       }
@@ -287,6 +311,10 @@ void FlowAnalysisWithLeeYangZeros::ProcessEventAfterFirstTrackLoop(const Int_t &
           TComplex cDenominator = fQtheta[it] * (TComplex::Exp(fExponent[it]));
           fPrReDenom[it]->Fill(icent, cDenominator.Re());
           fPrImDenom[it]->Fill(icent, cDenominator.Im());
+          // LYZ-EP
+          TComplex cTemporary = fR02Sum[icent][it]*fQtheta[it]*TComplex::Exp(fExponent[it]);
+          fPrReDtheta[it]->Fill(icent, cTemporary.Re());
+          fPrImDtheta[it]->Fill(icent, cTemporary.Im());
         }
       }
     }
@@ -302,7 +330,7 @@ void FlowAnalysisWithLeeYangZeros::ProcessSecondTrackLoop(Double_t &phi, Double_
       Double_t dCosTerm = TMath::Cos(2.0 * (phi - fTheta[it]));
       if (fUseProduct)
       {
-        TComplex cCosTermComplex(1., fR02Pro[icent][it] * dCosTerm);
+        TComplex cCosTermComplex(1., fWeight * fR02Pro[icent][it] * dCosTerm);
         TComplex cNumeratorPOIPro = fGenfunPror0[it] * dCosTerm / cCosTermComplex;
         fPrReNumerPro[it][icent]->Fill(pt, cNumeratorPOIPro.Re());
         fPrImNumerPro[it][icent]->Fill(pt, cNumeratorPOIPro.Im());
@@ -323,8 +351,8 @@ void FlowAnalysisWithLeeYangZeros::ProcessRootFileWithHistFromFirstRun()
   TFile *fileHist = new TFile(fstrInputFileFromFirstRun.Data(), "read");
   TProfile *prReGthetaSum[ncent][nTheta];
   TProfile *prImGthetaSum[ncent][nTheta];
-  TProfile *prReGthetaProduct[ncent][nTheta];
-  TProfile *prImGthetaProduct[ncent][nTheta];
+  TProfile *prReGthetaPro[ncent][nTheta];
+  TProfile *prImGthetaPro[ncent][nTheta];
 
   for (Int_t i = 0; i < ncent; ++i)
   {
@@ -333,9 +361,9 @@ void FlowAnalysisWithLeeYangZeros::ProcessRootFileWithHistFromFirstRun()
 
       if (fUseProduct)
       {
-        prReGthetaProduct[i][j] = dynamic_cast<TProfile*> (fileHist->FindObjectAny(Form("prReGthetaProduct_cent%i_theta%i", i, j)));
-        prImGthetaProduct[i][j] = dynamic_cast<TProfile*> (fileHist->FindObjectAny(Form("prImGthetaProduct_cent%i_theta%i", i, j)));
-        if (!prReGthetaProduct[i][j] || !prImGthetaProduct[i][j]) { cerr << "Cannot find input hist from first run for Product LYZ method!" << endl; }
+        prReGthetaPro[i][j] = dynamic_cast<TProfile*> (fileHist->FindObjectAny(Form("prReGthetaPro_cent%i_theta%i", i, j)));
+        prImGthetaPro[i][j] = dynamic_cast<TProfile*> (fileHist->FindObjectAny(Form("prImGthetaPro_cent%i_theta%i", i, j)));
+        if (!prReGthetaPro[i][j] || !prImGthetaPro[i][j]) { cerr << "Cannot find input hist from first run for Product LYZ method!" << endl; }
       }
       else
       {
@@ -351,7 +379,7 @@ void FlowAnalysisWithLeeYangZeros::ProcessRootFileWithHistFromFirstRun()
     {
       if (fUseProduct)
       {
-        TH1F *hGthetaPro = FillHistGtheta(prReGthetaProduct[ic][it], prImGthetaProduct[ic][it]);
+        TH1F *hGthetaPro = FillHistGtheta(prReGthetaPro[ic][it], prImGthetaPro[ic][it]);
         fR02Pro[ic][it] = GetR0(hGthetaPro);
       }
       else
@@ -460,8 +488,8 @@ void FlowAnalysisWithLeeYangZeros::SaveHist()
       {
         if (fUseProduct)
         {
-          fPrReGthetaProduct[i][j]->Write();
-          fPrImGthetaProduct[i][j]->Write();
+          fPrReGthetaPro[i][j]->Write();
+          fPrImGthetaPro[i][j]->Write();
         }
         else
         {
@@ -470,7 +498,7 @@ void FlowAnalysisWithLeeYangZeros::SaveHist()
         }
       }
     }
-    fPrRefMult->Write();
+    fPrMultRP->Write();
     fPrQ2x->Write();
     fPrQ2y->Write();
     fPrQ2ModSq->Write();
@@ -493,6 +521,8 @@ void FlowAnalysisWithLeeYangZeros::SaveHist()
       {
         fPrReDenom[j]->Write();
         fPrImDenom[j]->Write();
+        fPrReDtheta[j]->Write(); // LYZ-EP
+        fPrImDtheta[j]->Write(); // LYZ-EP
         for (Int_t i = 0; i < ncent; i++)
         {
           fPrReNumer[j][i]->Write();
@@ -516,8 +546,8 @@ void FlowAnalysisWithLeeYangZeros::SaveHist(TDirectoryFile *const &outputDir)
       {
         if (fUseProduct)
         {
-          outputDir->Add(fPrReGthetaProduct[i][j]);
-          outputDir->Add(fPrImGthetaProduct[i][j]);
+          outputDir->Add(fPrReGthetaPro[i][j]);
+          outputDir->Add(fPrImGthetaPro[i][j]);
         }
         else
         {
@@ -526,7 +556,7 @@ void FlowAnalysisWithLeeYangZeros::SaveHist(TDirectoryFile *const &outputDir)
         }
       }
     }
-    outputDir->Add(fPrRefMult);
+    outputDir->Add(fPrMultRP);
     outputDir->Add(fPrQ2x);
     outputDir->Add(fPrQ2y);
     outputDir->Add(fPrQ2ModSq);
@@ -549,6 +579,8 @@ void FlowAnalysisWithLeeYangZeros::SaveHist(TDirectoryFile *const &outputDir)
       {
         outputDir->Add(fPrReDenom[j]);
         outputDir->Add(fPrImDenom[j]);
+        outputDir->Add(fPrReDtheta[j]); // LYZ-EP
+        outputDir->Add(fPrImDtheta[j]); // LYZ-EP
         for (Int_t i = 0; i < ncent; i++)
         {
           outputDir->Add(fPrReNumer[j][i]);

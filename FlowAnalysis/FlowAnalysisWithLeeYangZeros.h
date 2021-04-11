@@ -21,10 +21,12 @@ public:
   virtual ~FlowAnalysisWithLeeYangZeros();
   void SetDebugFlag(Bool_t bDebug) { this->fDebug = bDebug; }
   void SetUseProduct(Bool_t kt) {this->fUseProduct = kt; }
-  Bool_t GetUseProduct() const { return this->fUseProduct; }
   void SetFirstRun(Bool_t kt) { this->fFirstRun = kt; }
+  void SetUseMultiplicityWeight(Bool_t kt) {this->fUseMultWeight = kt; }
+  Bool_t GetUseMultiplicityWeight() const { return this->fUseMultWeight; }
   void Init();
   void Zero(); // Reset variables for new event loop
+  void ProcessZeroTrackLoopRP(); // Need this method for Product LYZ
   void ProcessFirstTrackLoopRP(const Double_t &phi, const Double_t &pt, const Int_t &icent);
   void ProcessFirstTrackLoopPOI(const Double_t &pt);
   void ProcessEventAfterFirstTrackLoop(const Int_t &icent);
@@ -41,6 +43,7 @@ private:
   Bool_t fDebug;
   Bool_t fUseProduct;
   Bool_t fFirstRun;
+  Bool_t fUseMultWeight;
   Double_t fTheta[nTheta];
   Double_t fQtheta[nTheta];
   QVector *fQn;
@@ -50,17 +53,17 @@ private:
   TProfile *fPrImGthetaSum[ncent][nTheta];
   TH1F *fHistGthetaSum;
 
-  TProfile *fPrReGthetaProduct[ncent][nTheta];
-  TProfile *fPrImGthetaProduct[ncent][nTheta];
-  TH1F *fHistGthetaProduct;
+  TProfile *fPrReGthetaPro[ncent][nTheta];
+  TProfile *fPrImGthetaPro[ncent][nTheta];
+  TH1F *fHistGthetaPro;
 
   Double_t fRSum[rbins];
   Double_t fRProduct[rbins];
-  Double_t fMult;
-  TComplex fGenFunS[rbins][nTheta]; // sum
+  Int_t fMult; // multiplicity of reference particles
+  TComplex fGenFunS;                // sum
   TComplex fGenFunP[rbins][nTheta]; // product
-
-  TProfile *fPrRefMult;
+  Double_t fWeight;
+  TProfile *fPrMultRP; // TProfile multiplicity of reference particles
   TProfile *fPrQ2x;
   TProfile *fPrQ2y;
   TProfile *fPrQ2ModSq;
@@ -77,12 +80,16 @@ private:
   TProfile *fPrImDenomPro[nTheta];
   TProfile *fPrReNumerPro[nTheta][ncent];
   TProfile *fPrImNumerPro[nTheta][ncent];
-  Double_t fMultPOI[npt];
+  Double_t fMultPOI[npt]; // multiplicity of particles of interest
   TComplex fExponent[nTheta];
   TComplex fdGr0[nTheta];
   TComplex fGenfunPror0[nTheta];
   Double_t fR02Sum[ncent][nTheta];
   Double_t fR02Pro[ncent][nTheta];
+
+  // Event plane Lee Yang Zeros
+  TProfile *fPrReDtheta[nTheta];
+  TProfile *fPrImDtheta[nTheta];
 
   ClassDef(FlowAnalysisWithLeeYangZeros,0);
 };

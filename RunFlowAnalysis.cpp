@@ -337,6 +337,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowLYZSUM->SetDebugFlag(debug);
     flowLYZSUM->SetUseProduct(false);
     flowLYZSUM->SetFirstRun(true);
+    // flowLYZSUM->SetUseMultiplicityWeight(false); // true by default
     flowLYZSUM->Init();
   }
   if (LYZ_SUM_2) {
@@ -344,6 +345,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowLYZSUM->SetDebugFlag(debug);
     flowLYZSUM->SetUseProduct(false);
     flowLYZSUM->SetFirstRun(false);
+    // flowLYZSUM->SetUseMultiplicityWeight(false); // true by default
     flowLYZSUM->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
     flowLYZSUM->Init();
   }
@@ -353,6 +355,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowLYZPROD->SetDebugFlag(debug);
     flowLYZPROD->SetUseProduct(true);
     flowLYZPROD->SetFirstRun(true);
+    // flowLYZPROD->SetUseMultiplicityWeight(false); // true by default
     flowLYZPROD->Init();
   }
   if (LYZ_PRODUCT_2) {
@@ -360,6 +363,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowLYZPROD->SetDebugFlag(debug);
     flowLYZPROD->SetUseProduct(true);
     flowLYZPROD->SetFirstRun(false);
+    // flowLYZPROD->SetUseMultiplicityWeight(false); // true by default
     flowLYZPROD->SetInputFileFromFirstRun("FirstRun.root"); // need to be improve!!!
     flowLYZPROD->Init();
   }
@@ -447,6 +451,30 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessFirstTrackLoopFHCal(eta, phi, energy);
       }
     }
+    if ( (LYZ_PRODUCT_1 || LYZ_PRODUCT_2) && flowLYZPROD->GetUseMultiplicityWeight() )
+    { // Zero Track loop for Product LYZ
+      for (Int_t iTrk = 0; iTrk < mult; iTrk++)
+      {
+        if (readMCTracks)
+        {
+          auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(iTrk);
+          if (!trackCut(mcTrack)) { continue; } // TPC cut
+          pt = mcTrack->GetPt();
+        }
+        else
+        { // Read reco tracks
+          auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
+          auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(recoTrack->GetMcId());
+          if (bMotherIDcut) { if (!trackCutMotherID(recoTrack, mcTrack)) { continue; } }
+          else { if (!trackCut(recoTrack,fDCAx,fDCAy,fDCAz)) { continue; } }
+          pt = recoTrack->GetPt();
+        }
+        if (pt > minptRF && pt < maxptRF)
+        {
+          flowLYZPROD->ProcessZeroTrackLoopRP();
+        }
+      }
+    }
     for (Int_t iTrk = 0; iTrk < mult; iTrk++)
     { // First Track loop
       if (readMCTracks)
@@ -457,7 +485,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         pt = mcTrack->GetPt();
         eta = mcTrack->GetEta();
         phi = mcTrack->GetPhi();
-        energy= mcTrack->GetEnergy();
+        energy = mcTrack->GetEnergy();
         if ((FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) && readMCTracks)
         {
           if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->ProcessFirstTrackLoop(eta, phi, energy);
@@ -554,12 +582,12 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   // Writing output
   const Int_t nMethods = 10;
   TString dirNameMethod[nMethods] = {"ETASUBEP","ETA3SUBEP","FHCALEP","SP","LYZSUM","LYZPROD","QC","HQC","LYZEP","MCEP"};
+  fo->cd();
   TDirectoryFile *dirFileFinal[nMethods] = {nullptr};
   for(Int_t i=0;i<nMethods;i++)
   {
     dirFileFinal[i] = new TDirectoryFile(dirNameMethod[i].Data(),dirNameMethod[i].Data());
   }
-  fo->cd();
   // if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->SaveHist();
   // if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->SaveHist();
   // if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->SaveHist();
