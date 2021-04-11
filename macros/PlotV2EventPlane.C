@@ -2,10 +2,10 @@
 #include "DrawTGraph.C"
 #include "../constants.C"
 void PlotV2EventPlane(TString inputFileName = "SecondRun.root",
-                      TString methodName = "SP"
+                      TString methodName = "MC",
                       Bool_t saveAsPNG = true,
                       TString outDirName = "pics")
-// methodName can be "EtaSub", "SP", "FHCalEP", "LYZEP", "Eta3Sub"
+// methodName can be "EtaSub", "SP", "FHCalEP", "LYZEP", "Eta3Sub", "MC"
 {
 
   TFile *fi = TFile::Open(inputFileName.Data());
@@ -55,6 +55,7 @@ void PlotV2EventPlane(TString inputFileName = "SecondRun.root",
   TCanvas can;
   TProfile *prV2diffEta = PlotV2vsEta(prV2CentEta,10,40);// v2 versus eta of charged hadrons, 0.2<pt<3.5 GeV/c, 10-40%
   gr[3]=Converter(prV2diffEta);
+  gr[3]->SetTitle(Form("v_{2}{%s} of charged hadrons, 0.2<#it{p}_{T}^{}< 3.0 GeV/c",methodName.Data()));
   gr[3]->GetYaxis()->SetTitle("v_{2}");
   gr[3]->GetXaxis()->SetTitle("#eta");
   gr[3]->GetYaxis()->SetRangeUser(0., 0.2);

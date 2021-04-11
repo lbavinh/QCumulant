@@ -42,7 +42,7 @@ PicoDstMCEvent *McPicoReader::ReadMcEvent(Int_t ev_num)
   fChain->GetEntry(ev_num);
   auto event = new PicoDstMCEvent();
   event->SetB(bimp);
-  // event->SetPhiRP(0.);
+  event->SetPhiRP(0.);
   // event->SetVertex(0., 0., 0.);
   return event;
 }

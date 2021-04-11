@@ -32,6 +32,7 @@
 #include <FlowAnalysisWithQCumulant.h>
 #include <FlowAnalysisWithHighOrderQCumulant.h>
 #include <FlowAnalysisWithLeeYangZerosEventPlane.h>
+#include <FlowAnalysisWithMCEventPlane.h>
 
 #include "utilities.C"
 
@@ -54,18 +55,19 @@ Bool_t SCALARPRODUCT_2 = 0;           // Scalar product using eta-sub method (se
 Bool_t QCUMULANT = 1;                 // Q-Cumulants: 2- and 4-particle cumulants obtained by both standard and subevent methods 
 Bool_t HIGHORDERQCUMULANT = 0;        // Q-Cumulants: 2- up to 8-particle cumulants using recursive algorithm
 Bool_t LYZEP = 0;                     // one needs to run LYZ_SUM_1 & 2 before set this flag to kTRUE
+Bool_t MCEP = 0;                      // MC Event Plane
 Bool_t readMCTracks = 0; // 0 - read reco tracks, 1 - read MC tracks
-Int_t harmonic = 3; // set harmonic for eta-sub event plane, Q-Cumulants, and scalar product method
+Int_t harmonic = 2; // set harmonic for eta-sub event plane, Q-Cumulants, and scalar product method
 Bool_t bMotherIDcut = 1;
 // Kinetic cuts by default if not using config file
-Double_t maxpt = 3.6;     // max pt for differential flow
+Double_t maxpt = 3.0;     // max pt for differential flow
 Double_t minpt = 0.;      // min pt for differential flow
 Double_t maxptRF = 3.;    // max pt for reference flow
 Double_t minptRF = 0.2;   // min pt for reference flow
 Double_t eta_cut = 1.5;   // pseudorapidity acceptance window for flow measurements 
 Double_t eta_gap = 0.05;  // +-0.05, eta-gap between 2 eta sub-event
 Int_t Nhits_cut = 16;     // minimum nhits of reconstructed tracks
-Double_t DCAcut = 0.5;
+Double_t DCAcut = 3.0;    // 3*sigma of DCA distribution 
 Double_t pid_probability = 0.9;
 Long64_t Nevents = -1;
 
@@ -112,6 +114,9 @@ void readConfig(const TString& _strFileName)
   SCALARPRODUCT_2 = env.GetValue("SCALARPRODUCT_2", 0);
   QCUMULANT = env.GetValue("QCUMULANT", 0);
   HIGHORDERQCUMULANT = env.GetValue("HIGHORDERQCUMULANT", 0);
+  LYZEP = env.GetValue("LYZEP", 0);
+  MCEP = env.GetValue("MCEP", 0);
+  
   readMCTracks = env.GetValue("readMCTracks", 0);
   harmonic = env.GetValue("harmonic", 0);
   bMotherIDcut = env.GetValue("bMotherIDcut", 0);
@@ -124,9 +129,9 @@ Bool_t trackCut(PicoDstRecoTrack *const &recoTrack, TF2 *const &fDCAx, TF2 *cons
   Double_t pt = recoTrack->GetPt();
   Double_t eta = recoTrack->GetEta();
   if (pt < minpt || pt > maxpt || fabs(eta) > eta_cut)     return false;
-  // if (fabs(recoTrack->GetDCAx()) > DCAcut)        return false; // DCAx cut
-  // if (fabs(recoTrack->GetDCAy()) > DCAcut)        return false; // DCAy cut
-  // if (fabs(recoTrack->GetDCAz()) > DCAcut)        return false; // DCAz cut
+  // if (fabs(recoTrack->GetDCAx()) > DCAcut)        return false; // static DCAx cut
+  // if (fabs(recoTrack->GetDCAy()) > DCAcut)        return false; // static DCAy cut
+  // if (fabs(recoTrack->GetDCAz()) > DCAcut)        return false; // static DCAz cut
   if (recoTrack->GetNhits() < Nhits_cut)          return false; // TPC hits cut    
   if (fabs(recoTrack->GetDCAx()) > fDCAx->Eval(recoTrack->GetPt(),recoTrack->GetEta())*DCAcut) return false; // DCAx cut
   if (fabs(recoTrack->GetDCAy()) > fDCAy->Eval(recoTrack->GetPt(),recoTrack->GetEta())*DCAcut) return false; // DCAy cut
@@ -158,7 +163,7 @@ Bool_t trackCutMotherID(PicoDstRecoTrack *const &recoTrack, PicoDstMCTrack *cons
   return true;                                   
 }
 
-Int_t findBin(Double_t pt)
+Int_t findBin(const Double_t &pt)
 {
   Int_t ipt = -1;
   for (Int_t j = 0; j < npt; j++) { if (pt >= pTBin[j] && pt < pTBin[j + 1]) ipt = j; }
@@ -223,6 +228,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     cout << "QCUMULANT = " << QCUMULANT << endl;
     cout << "HIGHORDERQCUMULANT = " << HIGHORDERQCUMULANT << endl;
     cout << "LYZEP = " << LYZEP << endl;
+    cout << "MCEP = " << MCEP << endl;
     cout << "readMCTracks = " << readMCTracks << endl;
     cout << "harmonic = " << harmonic << endl;       
     cout << "bMotherIDcut = " << bMotherIDcut << endl;
@@ -261,7 +267,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     fDCAy = dynamic_cast<TF2*> (inputDCAfile->Get("f_sigma1"));
     fDCAz = dynamic_cast<TF2*> (inputDCAfile->Get("f_sigma2"));
     if (!fDCAx || !fDCAy || !fDCAz) { cerr << "Cannot find fit function for DCA primary track cuts!" << endl; return; }
-    else{ cout << "Using " << DCAcut <<" sigma DCA cut." << endl; }
+    else{ cout << "Using " << DCAcut <<" sigma of DCA distr. cut." << endl; }
   }
   reader->Init(chain);
 
@@ -277,6 +283,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   FlowAnalysisWithQCumulant              *flowQC          = nullptr; // Q-Cumulant
   FlowAnalysisWithHighOrderQCumulant     *flowHighQC      = nullptr; // 2- to 8-particle correlations using recursive algorithm
   FlowAnalysisWithLeeYangZerosEventPlane *flowLYZEP       = nullptr; // Lee-Yang Zeros Event Plane
+  FlowAnalysisWithMCEventPlane           *flowMCEP        = nullptr; // MC Event Plane
 
   if (ETASUBEVENTPLANE_1) {
     flowEtaSub = new FlowAnalysisWithEtaSubEventPlane();
@@ -386,6 +393,14 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     flowLYZEP->SetInputFileFromFirstAndSecondRun("FirstRun.root", "SecondRun.root");
     flowLYZEP->Init();
   }
+  if (MCEP) {
+    flowMCEP = new FlowAnalysisWithMCEventPlane();
+    flowMCEP->SetDebugFlag(debug);
+    flowMCEP->SetHarmonic(harmonic);
+    flowMCEP->SetEtaGap(eta_gap);
+    flowMCEP->Init();
+  }
+
   Int_t icent, mult, ipt, fId;
   Double_t bimp, cent, pt, eta, phi, charge, energy;
   Long64_t chain_size = chain->GetEntries();
@@ -417,7 +432,8 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     if (QCUMULANT)                                          flowQC->Zero();
     if (HIGHORDERQCUMULANT)                                 flowHighQC->Zero();
     if (LYZEP)                                              flowLYZEP->Zero();
-    
+    if (MCEP)                                             { flowMCEP->Zero(); flowMCEP->SetPsiRP(mcEvent->GetPhiRP()); }
+
     if ((FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) && !readMCTracks)
     {
       Int_t Nmodules = reader->GetNFHCalModules();
@@ -475,6 +491,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         if (LYZ_PRODUCT_1 || LYZ_PRODUCT_2) flowLYZPROD->ProcessFirstTrackLoopRP(phi, pt, icent);
         if (QCUMULANT) flowQC->ProcessFirstTrackLoopRP(eta, phi);
         if (HIGHORDERQCUMULANT) flowHighQC->ProcessFirstTrackLoopRP(phi);
+        if (MCEP) flowMCEP->ProcessFirstTrackLoop(eta, phi, 1.);
       }
 
       if (QCUMULANT) flowQC->ProcessFirstTrackLoopPOI(ipt, eta, phi, fId, charge);
@@ -491,7 +508,8 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     if (QCUMULANT) flowQC->ProcessEventAfterFirstTrackLoop(icent);
     if (HIGHORDERQCUMULANT) flowHighQC->ProcessEventAfterFirstTrackLoop(icent);
     if (LYZEP) flowLYZEP->ProcessEventAfterFirstTrackLoop(icent);
-    if (ETASUBEVENTPLANE_2 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_2 || LYZ_SUM_2 || LYZ_PRODUCT_2 || SCALARPRODUCT_2 || LYZEP)
+    if (MCEP) flowMCEP->ProcessEventAfterFirstTrackLoop(cent);
+    if (ETASUBEVENTPLANE_2 || FHCALEVENTPLANE_2 || THREEETASUBEVENTPLANE_2 || LYZ_SUM_2 || LYZ_PRODUCT_2 || SCALARPRODUCT_2 || LYZEP || MCEP)
     {
       for (Int_t iTrk = 0; iTrk < mult; iTrk++)
       { // 2nd Track loop
@@ -527,20 +545,21 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         if (LYZ_SUM_2) flowLYZSUM->ProcessSecondTrackLoop(phi, pt, icent);
         if (LYZ_PRODUCT_2) flowLYZPROD->ProcessSecondTrackLoop(phi, pt, icent);
         if (LYZEP) flowLYZEP->ProcessSecondTrackLoop(eta, phi, pt, cent, fId, charge);
+        if (MCEP) flowMCEP->ProcessSecondTrackLoop(eta, phi, pt, cent, fId, charge);
       } // end of 2nd Track loop
     }
     
   } // end event loop
   
   // Writing output
-  const Int_t nMethods = 9;
-  TString dirNameMethod[nMethods] = {"ETASUBEP","ETA3SUBEP","FHCALEP","SP","LYZSUM","LYZPROD","QC","HQC","LYZEP"};
-  fo->cd();
+  const Int_t nMethods = 10;
+  TString dirNameMethod[nMethods] = {"ETASUBEP","ETA3SUBEP","FHCALEP","SP","LYZSUM","LYZPROD","QC","HQC","LYZEP","MCEP"};
   TDirectoryFile *dirFileFinal[nMethods] = {nullptr};
   for(Int_t i=0;i<nMethods;i++)
   {
     dirFileFinal[i] = new TDirectoryFile(dirNameMethod[i].Data(),dirNameMethod[i].Data());
   }
+  fo->cd();
   // if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->SaveHist();
   // if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->SaveHist();
   // if (FHCALEVENTPLANE_1 || FHCALEVENTPLANE_2) flowFHCalEP->SaveHist();
@@ -560,9 +579,67 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (QCUMULANT)                                          flowQC->SaveHist(dirFileFinal[6]);
   if (HIGHORDERQCUMULANT)                                 flowHighQC->SaveHist(dirFileFinal[7]);
   if (LYZEP)                                              flowLYZEP->SaveHist(dirFileFinal[8]);
+  if (MCEP)                                               flowMCEP->SaveHist(dirFileFinal[9]);
   
   fo->Close();
 
   timer.Stop();
   timer.Print();
+}
+
+int main(int argc, char **argv)
+{
+  TString iFileName, oFileName, configFileName = "";
+
+  if (argc < 5)
+  {
+    std::cerr << "./FlowQCumulant -i INPUT -o OUTPUT [OPTIONAL: -config qcumulant.cfg]" << std::endl;
+    return 1;
+  }
+  for (Int_t i = 1; i < argc; i++)
+  {
+    if (std::string(argv[i]) != "-i" &&
+        std::string(argv[i]) != "-o" &&
+        std::string(argv[i]) != "-config")
+    {
+      std::cerr << "\n[ERROR]: Unknown parameter " << i << ": " << argv[i] << std::endl;
+      return 2;
+    }
+    else
+    {
+      if (std::string(argv[i]) == "-i" && i != argc - 1)
+      {
+        iFileName = argv[++i];
+        continue;
+      }
+      if (std::string(argv[i]) == "-i" && i == argc - 1)
+      {
+        std::cerr << "\n[ERROR]: Input file name was not specified " << std::endl;
+        return 3;
+      }
+      if (std::string(argv[i]) == "-o" && i != argc - 1)
+      {
+        oFileName = argv[++i];
+        continue;
+      }
+      if (std::string(argv[i]) == "-o" && i == argc - 1)
+      {
+        std::cerr << "\n[ERROR]: Output file name was not specified " << std::endl;
+        return 4;
+      }
+      if (std::string(argv[i]) == "-config" && i != argc - 1)
+      {
+        configFileName = argv[++i];
+        continue;
+      }
+      if (std::string(argv[i]) == "-config" && i == argc - 1)
+      {
+        std::cerr << "\n[ERROR]: Output file name was not specified " << std::endl;
+        return 1;
+      }
+    }
+  }
+  RunFlowAnalysis(iFileName, oFileName, configFileName);
+
+  return 0;
 }

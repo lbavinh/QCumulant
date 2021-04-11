@@ -48,7 +48,7 @@ set(FLOW_INCLUDE_LIBRARIES
 
 # set_source_files_properties(FlowQCumulant.C PROPERTIES LANGUAGE CXX)
 
-add_executable(RunFlowAnalysis main.cpp)
+add_executable(RunFlowAnalysis RunFlowAnalysis.cpp)
 target_link_libraries(RunFlowAnalysis ${FLOW_INCLUDE_LIBRARIES})
 add_executable(GetDCA GetDCA.cpp)
 target_link_libraries(GetDCA ${FLOW_INCLUDE_LIBRARIES})
