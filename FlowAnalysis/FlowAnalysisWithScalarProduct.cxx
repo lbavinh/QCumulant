@@ -51,15 +51,15 @@ void FlowAnalysisWithScalarProduct::Zero()
   fQvector_R->Zero();
 }
 
-void FlowAnalysisWithScalarProduct::ProcessFirstTrackLoop(const Double_t &eta, const Double_t &phi)
+void FlowAnalysisWithScalarProduct::ProcessFirstTrackLoop(const Double_t &eta, const Double_t &phi, const Double_t &weight)
 {
   if (eta < -fEtaGap)
   {
-    fQvector_L->CalQVector(phi, 1.);
+    fQvector_L->CalQVector(phi, weight);
   }
   if (eta > fEtaGap)
   {
-    fQvector_R->CalQVector(phi, 1.);
+    fQvector_R->CalQVector(phi, weight);
   }
 }
 

@@ -29,7 +29,7 @@ Int_t GetPtBin(Double_t pt)
 Int_t GetEtaBin(Double_t eta)
 {
   Int_t ieta = -1;
-  for (Int_t j = 0; j < neta; j++) { if (eta >= etaBin[j] && eta < etaBin[j + 1]) ieta = j; }
+  for (Int_t j = 0; j < netaBin; j++) { if (eta >= etaBin[j] && eta < etaBin[j + 1]) ieta = j; }
   return ieta;
 }
 

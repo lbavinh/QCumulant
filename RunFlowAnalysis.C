@@ -7,6 +7,7 @@
 #include <TFile.h>
 #include <TDirectoryFile.h>
 #include <TMath.h>
+#include <TF2.h>
 #include <TDatabasePDG.h>
 #include <TString.h>
 #include <TEnv.h>
@@ -117,16 +118,19 @@ void readConfig(const TString& _strFileName)
 
 }
 
-Bool_t trackCut(PicoDstRecoTrack *const &recoTrack)
+Bool_t trackCut(PicoDstRecoTrack *const &recoTrack, TF2 *const &fDCAx, TF2 *const &fDCAy, TF2 *const &fDCAz)
 {
   if (!recoTrack) { return false; }
   Double_t pt = recoTrack->GetPt();
   Double_t eta = recoTrack->GetEta();
   if (pt < minpt || pt > maxpt || fabs(eta) > eta_cut)     return false;
-  if (fabs(recoTrack->GetDCAx()) > DCAcut)        return false; // DCAx cut
-  if (fabs(recoTrack->GetDCAy()) > DCAcut)        return false; // DCAy cut
-  if (fabs(recoTrack->GetDCAz()) > DCAcut)        return false; // DCAz cut
+  // if (fabs(recoTrack->GetDCAx()) > DCAcut)        return false; // DCAx cut
+  // if (fabs(recoTrack->GetDCAy()) > DCAcut)        return false; // DCAy cut
+  // if (fabs(recoTrack->GetDCAz()) > DCAcut)        return false; // DCAz cut
   if (recoTrack->GetNhits() < Nhits_cut)          return false; // TPC hits cut    
+  if (fabs(recoTrack->GetDCAx()) > fDCAx->Eval(recoTrack->GetPt(),recoTrack->GetEta())*DCAcut) return false; // DCAx cut
+  if (fabs(recoTrack->GetDCAy()) > fDCAy->Eval(recoTrack->GetPt(),recoTrack->GetEta())*DCAcut) return false; // DCAy cut
+  if (fabs(recoTrack->GetDCAz()) > fDCAz->Eval(recoTrack->GetPt(),recoTrack->GetEta())*DCAcut) return false; // DCAz cut
   return true;                                   
 }
 
@@ -248,6 +252,17 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
     return;
   }
 
+  TFile *inputDCAfile;
+  TF2 *fDCAx, *fDCAy, *fDCAz;
+  if (!readMCTracks && !bMotherIDcut)
+  { // using DCA cuts for primary track cut
+    inputDCAfile = new TFile("DCA_FIT.root","read");
+    fDCAx = dynamic_cast<TF2*> (inputDCAfile->Get("f_sigma0"));
+    fDCAy = dynamic_cast<TF2*> (inputDCAfile->Get("f_sigma1"));
+    fDCAz = dynamic_cast<TF2*> (inputDCAfile->Get("f_sigma2"));
+    if (!fDCAx || !fDCAy || !fDCAz) { cerr << "Cannot find fit function for DCA primary track cuts!" << endl; return; }
+    else{ cout << "Using " << DCAcut <<" sigma DCA cut." << endl; }
+  }
   reader->Init(chain);
 
   // Configure output information
@@ -442,7 +457,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
         auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
         auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(recoTrack->GetMcId());
         if (bMotherIDcut) { if (!trackCutMotherID(recoTrack, mcTrack)) { continue; } }
-        else { if (!trackCut(recoTrack)) { continue; } }
+        else { if (!trackCut(recoTrack,fDCAx,fDCAy,fDCAz)) { continue; } }
         pt = recoTrack->GetPt();
         eta = recoTrack->GetEta();
         phi = recoTrack->GetPhi();
@@ -455,7 +470,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
       { // Reference Flow pt cut
         if (ETASUBEVENTPLANE_1 || ETASUBEVENTPLANE_2) flowEtaSub->ProcessFirstTrackLoop(eta, phi, pt);
         if (THREEETASUBEVENTPLANE_1 || THREEETASUBEVENTPLANE_2) flowThreeEtaSub->ProcessFirstTrackLoopTPC(eta, phi, pt);
-        if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->ProcessFirstTrackLoop(eta, phi);
+        if (SCALARPRODUCT_1 || SCALARPRODUCT_2) flowSP->ProcessFirstTrackLoop(eta, phi, pt);
         if (LYZ_SUM_1 || LYZ_SUM_2) flowLYZSUM->ProcessFirstTrackLoopRP(phi, pt, icent);
         if (LYZ_PRODUCT_1 || LYZ_PRODUCT_2) flowLYZPROD->ProcessFirstTrackLoopRP(phi, pt, icent);
         if (QCUMULANT) flowQC->ProcessFirstTrackLoopRP(eta, phi);
@@ -496,7 +511,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
           auto recoTrack = (PicoDstRecoTrack *) reader->ReadRecoTrack(iTrk);
           auto mcTrack = (PicoDstMCTrack *) reader->ReadMcTrack(recoTrack->GetMcId());
           if (bMotherIDcut) { if (!trackCutMotherID(recoTrack, mcTrack)) { continue; } }
-          else { if (!trackCut(recoTrack)) { continue; } }
+          else { if (!trackCut(recoTrack,fDCAx,fDCAy,fDCAz)) { continue; } }
           pt = recoTrack->GetPt();
           eta = recoTrack->GetEta();
           phi = recoTrack->GetPhi();

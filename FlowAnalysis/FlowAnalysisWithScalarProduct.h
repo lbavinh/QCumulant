@@ -25,7 +25,7 @@ public:
   virtual ~FlowAnalysisWithScalarProduct();
   void Init();
   void Zero(); // Reset variables for new event loop
-  void ProcessFirstTrackLoop(const Double_t &eta, const Double_t &phi);
+  void ProcessFirstTrackLoop(const Double_t &eta, const Double_t &phi, const Double_t &weight);
   void ProcessEventAfterFirstTrackLoop(const Double_t &dCent);
   void ProcessSecondTrackLoop(const Double_t &eta, const Double_t &phi, const Double_t &pt, const Double_t &dCent, const Int_t &pid, const Double_t &charge);
   void SetFirstRun(Bool_t kt) { this->fFirstRun = kt; }
