@@ -19,8 +19,9 @@ Appendix 1. [DCA correction](#Append1)
 Requirement: CMake, ROOT (should work with versions 5 and 6)
 
 ```bash
-git clone https://github.com/FlowNICA/CumulantFlow.git
-cd CumulantFlow
+cd /scratch2/${USER}
+git clone https://devel.mephi.ru/aatruttse/QCumulant.git
+cd QCumulant
 ```
 
 
@@ -84,7 +85,7 @@ hadd -j 4 outputFileName ./OUT/${JOB_ID}/sum_${JOB_ID}_*.root
 where `outputFileName` - output file, should be named **FirstRun.root**, **SecondRun.root**, etc.
 ## III. Result analysis <a name="ResultAnalysis"></a>
 
-Macros for result plotting are stored in **CumulantFlow/macros**
+Macros for result plotting are stored in **QCumulant/macros**
 ```sh
 cd ../macros
 cp ../build/*Run.root ./

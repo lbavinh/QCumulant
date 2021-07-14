@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-#$ -wd /scratch2/$USER/CumulantFlow/build
+#$ -wd /scratch2/$USER/QCumulant/build
 #$ -cwd
 #$ -N Flow
 # -q all.q
@@ -14,7 +14,7 @@
 #
 
 # Main directory
-export MAIN_DIR=/scratch2/$USER/CumulantFlow/build
+export MAIN_DIR=/scratch2/$USER/QCumulant/build
 export FILELIST=/scratch2/lbavinh/QCumulant/build/split/runlistSGE_UrQMD_7.7_reco_full.list
 export IN_FILE=`sed "${SGE_TASK_ID}q;d" $FILELIST`
 export START_DIR=${PWD}
