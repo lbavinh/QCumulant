@@ -32,7 +32,7 @@ void FlowAnalysisWithFHCalEventPlane::Init()
   fQvector_R = new QVector(1.);
   if (!fFirstRun) 
   {
-    for (Int_t i; i < npid; i++)
+    for (Int_t i=0; i < npid; i++)
     {
       fPrV2vsPt[i] = new TProfile2D(Form("prV2FHCalEPvsPt_pid%i",i), Form("v_{2}{FHCal EP}(p_{T}) of %s",pidNames.at(i).Data()), ncent, &bin_cent[0], npt, &pTBin[0]);
     }
@@ -65,7 +65,7 @@ void FlowAnalysisWithFHCalEventPlane::ProcessFirstTrackLoop(const Double_t &eta,
 
 void FlowAnalysisWithFHCalEventPlane::ProcessEventAfterFirstTrackLoop(const Double_t &dCent)
 {
-  if (fQvector_L->GetWeight() != 0 && fQvector_R->GetWeight() != 0)
+  if (fQvector_L->GetWeight() != 0 && fQvector_R->GetWeight() != 0 && fQvector_L->GetMult() > mult_EP_cut && fQvector_R->GetMult() > mult_EP_cut)
   {
     fMultCut = kFALSE;
     fQvector_L->WeightQVector();
@@ -149,7 +149,7 @@ void FlowAnalysisWithFHCalEventPlane::SaveHist()
   {
     fPrV2FHCalEventPlane->Write();
     fPrV2vsEta->Write();
-    for (Int_t i; i < npid; i++)
+    for (Int_t i=0; i < npid; i++)
     {
       fPrV2vsPt[i]->Write();
     }
@@ -162,7 +162,7 @@ void FlowAnalysisWithFHCalEventPlane::SaveHist(TDirectoryFile *const &outputDir)
   {
     outputDir->Add(fPrV2FHCalEventPlane);
     outputDir->Add(fPrV2vsEta);
-    for (Int_t i; i < npid; i++)
+    for (Int_t i=0; i < npid; i++)
     {
       outputDir->Add(fPrV2vsPt[i]);
     }
