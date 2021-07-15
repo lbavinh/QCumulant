@@ -20,7 +20,7 @@ Requirement: CMake, ROOT (should work with versions 5 and 6)
 
 ```bash
 cd /scratch2/${USER}
-git clone https://devel.mephi.ru/aatruttse/QCumulant.git
+git clone https://github.com/lbavinh/QCumulant.git
 cd QCumulant
 ```
 
