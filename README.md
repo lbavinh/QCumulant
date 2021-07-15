@@ -15,7 +15,6 @@ Appendix 1. [DCA correction](#Append1)
 
 ## I. Installation <a name="Installation"></a>
 
-
 Requirement: CMake, ROOT (should work with versions 5 and 6)
 
 ```bash
@@ -23,7 +22,10 @@ cd /scratch2/${USER}
 git clone https://github.com/lbavinh/QCumulant.git
 cd QCumulant
 ```
-
+Remember to add the ROOT libraries to one's environment by sourcing `thisroot.sh` script. In NICA cluster terminal:
+```sh
+source /opt/fairsoft/bmn/may18p1/bin/thisroot.sh
+```
 
 One can install project via CMake:
 ```bash
