@@ -325,12 +325,14 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (FHCALEVENTPLANE_1) {
     flowFHCalEP = new FlowAnalysisWithFHCalEventPlane();
     flowFHCalEP->SetFirstRun(true);
+    flowFHCalEP->SetHarmonic(harmonic);
     flowFHCalEP->SetEtaGap(eta_gap);
     flowFHCalEP->Init();
   }
   if (FHCALEVENTPLANE_2) {
     flowFHCalEP = new FlowAnalysisWithFHCalEventPlane();
     flowFHCalEP->SetFirstRun(false);
+    flowFHCalEP->SetHarmonic(harmonic);
     flowFHCalEP->SetEtaGap(eta_gap);
     flowFHCalEP->SetDebugFlag(debug);
     flowFHCalEP->SetInputFileFromFirstRun("FirstRun.root");
@@ -340,6 +342,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (LYZ_SUM_1) {
     flowLYZSUM = new FlowAnalysisWithLeeYangZeros();
     flowLYZSUM->SetDebugFlag(debug);
+    flowLYZSUM->SetHarmonic(harmonic);
     flowLYZSUM->SetUseProduct(false);
     flowLYZSUM->SetFirstRun(true);
     // flowLYZSUM->SetUseMultiplicityWeight(false); // true by default
@@ -348,6 +351,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (LYZ_SUM_2) {
     flowLYZSUM = new FlowAnalysisWithLeeYangZeros();
     flowLYZSUM->SetDebugFlag(debug);
+    flowLYZSUM->SetHarmonic(harmonic);
     flowLYZSUM->SetUseProduct(false);
     flowLYZSUM->SetFirstRun(false);
     // flowLYZSUM->SetUseMultiplicityWeight(false); // true by default
@@ -358,6 +362,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (LYZ_PRODUCT_1) {
     flowLYZPROD = new FlowAnalysisWithLeeYangZeros();
     flowLYZPROD->SetDebugFlag(debug);
+    flowLYZPROD->SetHarmonic(harmonic);
     flowLYZPROD->SetUseProduct(true);
     flowLYZPROD->SetFirstRun(true);
     // flowLYZPROD->SetUseMultiplicityWeight(false); // true by default
@@ -366,6 +371,7 @@ void RunFlowAnalysis(TString inputFileName, TString outputFileName, TString conf
   if (LYZ_PRODUCT_2) {
     flowLYZPROD = new FlowAnalysisWithLeeYangZeros();
     flowLYZPROD->SetDebugFlag(debug);
+    flowLYZPROD->SetHarmonic(harmonic);
     flowLYZPROD->SetUseProduct(true);
     flowLYZPROD->SetFirstRun(false);
     // flowLYZPROD->SetUseMultiplicityWeight(false); // true by default
